@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ผู้ดูแลระบบ — งานรับนักเรียนใหม่ รร.มอ.ว.สฎ.</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--primary:#1a4f8b;--primary-dark:#123a68;--accent:#f5a623;--bg:#eef2f8;--card:#fff;
+        --text:#23303f;--muted:#6b7a8c;--ok:#1d8a4e;--bad:#c0392b;--line:#dde5ee}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+
+  header{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;padding:18px 16px}
+  header .wrap{max-width:1080px;margin:0 auto;display:flex;justify-content:space-between;
+               align-items:center;gap:12px;flex-wrap:wrap}
+  header h1{font-size:1.15rem}
+  header .sub{font-size:.83rem;opacity:.85}
+
+  nav{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;overflow-x:auto}
+  nav .wrap{max-width:1080px;margin:0 auto;display:flex}
+  nav button{background:none;border:none;padding:13px 17px;font-family:inherit;font-size:.92rem;
+             cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
+  nav button.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+
+  main{max-width:1080px;margin:22px auto 70px;padding:0 16px}
+  .view{display:none}.view.active{display:block}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px;margin-bottom:18px}
+  .card h3{font-size:1.03rem;color:var(--primary);margin-bottom:12px}
+
+  label{display:block;font-size:.86rem;font-weight:600;margin-bottom:5px;margin-top:12px}
+  input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+                        font-family:inherit;font-size:.94rem;background:#fff;color:var(--text)}
+  textarea{resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:2px solid #bcd2ec;border-color:var(--primary)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:0 14px}
+  .grid .full{grid-column:1/-1}
+
+  button.btn{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 22px;
+             font-family:inherit;font-size:.93rem;font-weight:600;cursor:pointer}
+  button.btn:hover{background:var(--primary-dark)}
+  button.btn.secondary{background:#e7edf5;color:var(--primary)}
+  button.btn.green{background:var(--ok)}
+  button.btn.red{background:var(--bad)}
+  button.btn.sm{padding:5px 13px;font-size:.83rem}
+  button.btn:disabled{opacity:.55;cursor:not-allowed}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+
+  .msg{padding:12px 16px;border-radius:8px;margin:12px 0;font-size:.91rem;display:none;white-space:pre-wrap}
+  .msg.ok{display:block;background:#e8f6ee;color:var(--ok);border:1px solid #bfe5cf}
+  .msg.err{display:block;background:#fdecea;color:var(--bad);border:1px solid #f5c6c0}
+
+  .note{background:#fff8e8;border-left:4px solid var(--accent);border-radius:0 8px 8px 0;
+        padding:12px 16px;font-size:.87rem;margin:12px 0}
+  .hint{font-size:.81rem;color:var(--muted)}
+  code{background:#eef2f7;padding:1px 6px;border-radius:4px;font-size:.87em}
+
+  table{width:100%;border-collapse:collapse;font-size:.86rem}
+  th,td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{background:#eef3f9;color:var(--primary);position:sticky;top:0}
+  .table-scroll{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:8px;margin-top:12px}
+
+  .stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .stat{flex:1;min-width:130px;background:#eef3f9;border-radius:10px;padding:13px;text-align:center}
+  .stat b{display:block;font-size:1.5rem;color:var(--primary)}
+  .stat span{font-size:.83rem;color:var(--muted)}
+
+  .row-item{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px;background:#fff}
+  .row-item .t{font-weight:600;color:var(--primary)}
+  .row-item .b{font-size:.87rem;color:var(--muted);white-space:pre-wrap;max-height:70px;overflow:hidden;margin-top:4px}
+
+  .switch{display:flex;align-items:center;gap:9px;font-size:.9rem;margin-top:10px}
+  .switch input{width:auto}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <h1>⚙️ ผู้ดูแลระบบ — งานรับนักเรียนใหม่ 2569</h1>
+      <div class="sub">จัดการประกาศ · FAQ · นำเข้ารายชื่อและผลสอบ · ดาวน์โหลดใบสมัคร</div>
+    </div>
+    <button class="btn secondary hidden" id="btnLogout" onclick="logout()">ออกจากระบบ</button>
+  </div>
+</header>
+
+<nav class="hidden" id="mainNav">
+  <div class="wrap">
+    <button data-v="import"  class="active" onclick="go('import')">📥 นำเข้าข้อมูลประกาศ</button>
+    <button data-v="stages"  onclick="go('stages')">🔓 เปิด/ปิดการประกาศ</button>
+    <button data-v="ann"     onclick="go('ann')">📢 ประกาศ</button>
+    <button data-v="faq"     onclick="go('faq')">💬 FAQ chatbot</button>
+    <button data-v="apps"    onclick="go('apps')">📋 ใบสมัคร (CSV)</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ═══ เข้าสู่ระบบ ═══ -->
+<section id="view-login" class="view active">
+  <div class="card" style="max-width:430px;margin:40px auto">
+    <h3>🔐 เข้าสู่ระบบผู้ดูแล</h3>
+    <div class="msg" id="loginMsg"></div>
+    <label>รหัสผู้ดูแล (ADMIN_KEY)</label>
+    <input id="adminKey" type="password" onkeydown="if(event.key==='Enter')login()">
+    <p class="hint" style="margin-top:6px">
+      รหัสเดียวกับที่ตั้งไว้ด้วย <code>wrangler secret put ADMIN_KEY</code></p>
+    <label>รหัสผู้ดูแลฝั่ง Google Sheet (ถ้าต่างกัน)</label>
+    <input id="sheetKey" type="password" placeholder="เว้นว่างถ้าใช้รหัสเดียวกัน">
+    <p class="hint" style="margin-top:6px">
+      ใช้เฉพาะตอนดาวน์โหลด CSV ใบสมัคร — ดูได้จากฟังก์ชัน <code>showAdminKey()</code> ใน Apps Script</p>
+    <div class="btn-row"><button class="btn" style="width:100%" onclick="login()">เข้าสู่ระบบ</button></div>
+  </div>
+</section>
+
+<!-- ═══ นำเข้าข้อมูลประกาศ ═══ -->
+<section id="view-import" class="view">
+  <div class="card">
+    <h3>📥 นำเข้ารายชื่อ / เลขที่นั่งสอบ / ผลสอบ</h3>
+    <div class="note">
+      วางข้อมูลจาก Excel หรือ Google Sheets ได้เลย (คัดลอกทั้งตารางรวมหัวตาราง แล้ววางในช่องด้านล่าง)
+      ระบบรองรับทั้งข้อมูลที่คั่นด้วย <b>Tab</b> (คัดลอกจาก Excel โดยตรง) และ <b>เครื่องหมายจุลภาค</b> (ไฟล์ CSV)
+      <br><b>ต้องมีคอลัมน์ <code>citizen_id</code> เสมอ</b> — ระบบใช้จับคู่กับผู้สมัคร และข้ามแถวที่เลขไม่ครบ 13 หลัก
+    </div>
+    <div class="msg" id="importMsg"></div>
+
+    <label>รอบการประกาศ</label>
+    <select id="impStage" onchange="renderTemplate()"></select>
+
+    <div id="tplBox" class="hint" style="margin-top:10px"></div>
+
+    <label>ข้อมูล (บรรทัดแรกคือหัวตาราง)</label>
+    <textarea id="impData" rows="12" placeholder="citizen_id	full_name	app_no	seat_no	room
+1101700230708	เด็กชายสมชาย ใจดี	M1-0001	001	LC408"></textarea>
+
+    <div class="switch">
+      <input type="checkbox" id="impReplace">
+      <label for="impReplace" style="margin:0;font-weight:400">
+        ลบข้อมูลเดิมของรอบนี้ทั้งหมดก่อนนำเข้า (ถ้าไม่ติ๊ก ระบบจะอัปเดตทับรายคนและเพิ่มคนใหม่)</label>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn secondary" onclick="previewImport()">👁️ ตรวจสอบข้อมูลก่อนนำเข้า</button>
+      <button class="btn green" id="btnImport" onclick="doImport()">📥 นำเข้าข้อมูล</button>
+    </div>
+
+    <div id="previewBox"></div>
+  </div>
+
+  <div class="card">
+    <h3>📄 ข้อมูลที่นำเข้าแล้ว</h3>
+    <div class="btn-row" style="margin-top:0">
+      <button class="btn secondary" onclick="loadRecords()">🔄 แสดงข้อมูลของรอบที่เลือกด้านบน</button>
+      <button class="btn red" onclick="clearStage()">🗑️ ลบข้อมูลของรอบนี้ทั้งหมด</button>
+    </div>
+    <div id="recordsBox"></div>
+  </div>
+</section>
+
+<!-- ═══ เปิด/ปิดการประกาศ ═══ -->
+<section id="view-stages" class="view">
+  <div class="card">
+    <h3>🔓 เปิด/ปิดการประกาศแต่ละรอบ</h3>
+    <p class="hint">ตราบใดที่ยัง "ปิด" ผู้สมัครจะเห็นเพียงข้อความแจ้งกำหนดการ ไม่เห็นข้อมูลรายบุคคล
+      จึงนำเข้าข้อมูลล่วงหน้าได้อย่างปลอดภัย แล้วค่อยเปิดตอนถึงเวลาประกาศ</p>
+    <div class="msg" id="stagesMsg"></div>
+    <div id="stagesBox" class="hint" style="margin-top:14px">กำลังโหลด…</div>
+  </div>
+</section>
+
+<!-- ═══ ประกาศ ═══ -->
+<section id="view-ann" class="view">
+  <div class="card">
+    <h3 id="annFormTitle">📢 เพิ่มประกาศใหม่</h3>
+    <div class="msg" id="annMsg"></div>
+    <input type="hidden" id="annId">
+    <label>หัวข้อ</label><input id="annTitle">
+    <label>เนื้อหา</label><textarea id="annBody" rows="8"></textarea>
+    <div class="grid">
+      <div><label>ลิงก์เอกสาร (ถ้ามี)</label><input id="annUrl" placeholder="https://…"></div>
+      <div><label>ข้อความปุ่มลิงก์</label><input id="annLabel" placeholder="อ่านประกาศฉบับเต็ม (PDF)"></div>
+      <div><label>ลำดับการแสดง</label><input id="annOrder" type="number" value="0"></div>
+    </div>
+    <div class="switch"><input type="checkbox" id="annPublished" checked>
+      <label for="annPublished" style="margin:0;font-weight:400">แสดงบนหน้าเว็บ</label></div>
+    <div class="btn-row">
+      <button class="btn green" onclick="saveAnn()">💾 บันทึก</button>
+      <button class="btn secondary" onclick="resetAnn()">ล้างฟอร์ม</button>
+    </div>
+  </div>
+  <div class="card"><h3>รายการประกาศ</h3><div id="annList" class="hint">กำลังโหลด…</div></div>
+</section>
+
+<!-- ═══ FAQ ═══ -->
+<section id="view-faq" class="view">
+  <div class="card">
+    <h3 id="faqFormTitle">💬 เพิ่มคำถาม-คำตอบ</h3>
+    <div class="msg" id="faqMsg"></div>
+    <input type="hidden" id="faqId">
+    <label>คำสำคัญ (คั่นด้วยเครื่องหมาย , )</label>
+    <input id="faqKeywords" placeholder="ค่าสมัคร,ค่าธรรมเนียม,กี่บาท">
+    <p class="hint" style="margin-top:4px">ระบบจะจับคู่เมื่อคำถามของผู้ใช้มีคำเหล่านี้อยู่ คำที่ยาวและตรงกว่าได้คะแนนสูงกว่า</p>
+    <label>คำถาม (ข้อความที่แสดงบนปุ่มลัด)</label><input id="faqQuestion">
+    <label>คำตอบ</label><textarea id="faqAnswer" rows="7"></textarea>
+    <div class="grid"><div><label>ลำดับ</label><input id="faqOrder" type="number" value="0"></div></div>
+    <div class="switch"><input type="checkbox" id="faqSuggested">
+      <label for="faqSuggested" style="margin:0;font-weight:400">แสดงเป็นปุ่มคำถามยอดฮิต</label></div>
+    <div class="btn-row">
+      <button class="btn green" onclick="saveFaq()">💾 บันทึก</button>
+      <button class="btn secondary" onclick="resetFaq()">ล้างฟอร์ม</button>
+    </div>
+  </div>
+  <div class="card"><h3>คลังคำถาม-คำตอบ</h3><div id="faqList" class="hint">กำลังโหลด…</div></div>
+</section>
+
+<!-- ═══ ใบสมัคร ═══ -->
+<section id="view-apps" class="view">
+  <div class="card">
+    <h3>📋 ใบสมัครสอบ (Google Sheet)</h3>
+    <div class="msg" id="appsMsg"></div>
+    <div class="stat-row" id="appsStats"></div>
+    <div class="btn-row" style="margin-top:0">
+      <button class="btn secondary" onclick="loadApps()">🔄 โหลดข้อมูลใบสมัคร</button>
+      <button class="btn green" onclick="downloadAppsCSV()">⬇️ ดาวน์โหลด CSV</button>
+    </div>
+    <p class="hint" style="margin-top:10px">
+      ข้อมูลใบสมัครเก็บใน Google Sheet (ไม่ได้อยู่ใน D1) — ไฟล์ CSV มี BOM เปิดใน Excel ภาษาไทยไม่เพี้ยน</p>
+    <div id="appsBox"></div>
+  </div>
+</section>
+
+</main>
+
+<script src="config.js"></script>
+<script>
+const CFG = window.PWS_CONFIG || {};
+const API = (CFG.WORKER_URL || "").replace(/\/+$/, "");
+
+let KEY = sessionStorage.getItem("pwsAdminKey") || "";
+let SHEET_KEY = sessionStorage.getItem("pwsSheetKey") || "";
+let stagesCache = [], appsData = [], parsedRows = [];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+async function api(path, options = {}) {
+  options.headers = Object.assign({ "Authorization": "Bearer " + KEY }, options.headers || {});
+  const res = await fetch(API + path, options);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "เชื่อมต่อระบบไม่สำเร็จ");
+  return data;
+}
+
+async function sheetApi(action, payload) {
+  const res = await fetch(CFG.APPS_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action, payload: Object.assign({ key: SHEET_KEY || KEY }, payload || {}) })
+  });
+  return res.json();
+}
+
+function showMsg(id, text, ok) {
+  const el = $(id);
+  el.textContent = text;
+  el.className = "msg " + (ok ? "ok" : "err");
+  if (ok) setTimeout(() => { el.className = "msg"; }, 6000);
+}
+
+function go(v) {
+  document.querySelectorAll(".view").forEach(el => el.classList.remove("active"));
+  $("view-" + v).classList.add("active");
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.v === v));
+  if (v === "ann") loadAnn();
+  if (v === "faq") loadFaq();
+  if (v === "stages") loadStages();
+  window.scrollTo(0, 0);
+}
+
+// ─── login ──────────────────────────────────────────────────────────────────
+async function login() {
+  const k = $("adminKey").value.trim();
+  if (!k) return showMsg("loginMsg", "กรุณากรอกรหัสผู้ดูแล", false);
+  try {
+    const res = await fetch(API + "/api/admin/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: k })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "เข้าสู่ระบบไม่สำเร็จ");
+
+    KEY = k;
+    SHEET_KEY = $("sheetKey").value.trim();
+    sessionStorage.setItem("pwsAdminKey", KEY);
+    sessionStorage.setItem("pwsSheetKey", SHEET_KEY);
+    enterAdmin();
+  } catch (e) {
+    showMsg("loginMsg", e.message, false);
+  }
+}
+
+function logout() {
+  KEY = ""; SHEET_KEY = "";
+  sessionStorage.removeItem("pwsAdminKey");
+  sessionStorage.removeItem("pwsSheetKey");
+  location.reload();
+}
+
+async function enterAdmin() {
+  $("mainNav").classList.remove("hidden");
+  $("btnLogout").classList.remove("hidden");
+  await loadStageOptions();
+  go("import");
+}
+
+// ─── รอบการประกาศ ───────────────────────────────────────────────────────────
+async function loadStageOptions() {
+  stagesCache = await api("/api/stages");
+  $("impStage").innerHTML = stagesCache.map(s =>
+    `<option value="${esc(s.code)}">${esc(s.title)}</option>`).join("");
+  renderTemplate();
+}
+
+const TEMPLATES = {
+  exam_card: ["citizen_id", "full_name", "app_no", "exam_type", "seat_no", "room", "report_room", "exam_date", "time_slot", "note"],
+  round1:    ["citizen_id", "full_name", "app_no", "exam_type", "status", "score", "rank_no", "note"],
+  interview: ["citizen_id", "full_name", "app_no", "exam_type", "room", "report_room", "exam_date", "time_slot", "note"],
+  final:     ["citizen_id", "full_name", "app_no", "exam_type", "status", "note"]
+};
+
+const COL_LABELS = {
+  citizen_id: "เลขประจำตัวประชาชน (จำเป็น)", full_name: "ชื่อ-สกุล", app_no: "เลขที่ใบสมัคร",
+  exam_type: "ประเภทการสมัคร", status: "ผลการสอบ (ผ่าน/ไม่ผ่าน)", seat_no: "เลขที่นั่งสอบ",
+  room: "ห้องสอบ/ห้องสัมภาษณ์", report_room: "ห้องรายงานตัว", exam_date: "วันสอบ",
+  time_slot: "ช่วงเวลา", score: "คะแนน", rank_no: "ลำดับที่", note: "หมายเหตุ"
+};
+
+function renderTemplate() {
+  const cols = TEMPLATES[$("impStage").value] || TEMPLATES.exam_card;
+  $("tplBox").innerHTML = "คอลัมน์ที่รองรับสำหรับรอบนี้: " +
+    cols.map(c => `<code>${c}</code>`).join(" ") +
+    "<br>" + cols.map(c => COL_LABELS[c]).join(" · ");
+  $("impData").placeholder = cols.join("\t");
+}
+
+async function loadStages() {
+  stagesCache = await api("/api/stages");
+  $("stagesBox").innerHTML = stagesCache.map(s => `
+    <div class="row-item">
+      <div class="t">${esc(s.title)} <span class="hint">(${esc(s.code)})</span></div>
+      <div class="switch">
+        <input type="checkbox" id="pub_${esc(s.code)}" ${s.published ? "checked" : ""}>
+        <label for="pub_${esc(s.code)}" style="margin:0;font-weight:400">
+          เปิดให้ผู้สมัครสืบค้นข้อมูลรอบนี้แล้ว</label>
+      </div>
+      <label>ข้อความแจ้งเมื่อยังไม่เปิด</label>
+      <textarea id="note_${esc(s.code)}" rows="2">${esc(s.publish_note || "")}</textarea>
+      <div class="btn-row">
+        <button class="btn sm" onclick="saveStage('${esc(s.code)}')">💾 บันทึก</button>
+      </div>
+    </div>`).join("");
+}
+
+async function saveStage(code) {
+  try {
+    await api("/api/admin/stages/" + code, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        published: $("pub_" + code).checked ? 1 : 0,
+        publish_note: $("note_" + code).value
+      })
+    });
+    showMsg("stagesMsg", "บันทึกสถานะการประกาศเรียบร้อยแล้ว", true);
+  } catch (e) { showMsg("stagesMsg", e.message, false); }
+}
+
+// ─── นำเข้าข้อมูล ───────────────────────────────────────────────────────────
+// รองรับทั้ง Tab (คัดลอกจาก Excel) และ CSV ที่มีเครื่องหมายคำพูดครอบ
+function parseTable(text) {
+  const lines = text.replace(/\r\n/g, "\n").split("\n").filter(l => l.trim());
+  if (lines.length < 2) return { error: "ต้องมีอย่างน้อย 2 บรรทัด (หัวตาราง + ข้อมูล)" };
+
+  const delim = lines[0].includes("\t") ? "\t" : ",";
+  const split = line => {
+    if (delim === "\t") return line.split("\t").map(c => c.trim());
+    const out = []; let cur = "", inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i + 1] === '"') { cur += '"'; i++; } else inQ = !inQ;
+      } else if (ch === "," && !inQ) { out.push(cur.trim()); cur = ""; }
+      else cur += ch;
+    }
+    out.push(cur.trim());
+    return out;
+  };
+
+  const headers = split(lines[0]).map(h => h.replace(/^"|"$/g, "").trim());
+  if (!headers.includes("citizen_id")) {
+    return { error: 'ไม่พบคอลัมน์ "citizen_id" ในหัวตาราง — พบ: ' + headers.join(", ") };
+  }
+
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cells = split(lines[i]);
+    const o = {};
+    headers.forEach((h, idx) => { o[h] = (cells[idx] || "").replace(/^"|"$/g, ""); });
+    rows.push(o);
+  }
+  return { headers, rows };
+}
+
+function previewImport() {
+  const r = parseTable($("impData").value);
+  if (r.error) { $("previewBox").innerHTML = ""; return showMsg("importMsg", r.error, false); }
+
+  parsedRows = r.rows;
+  const valid = r.rows.filter(x => String(x.citizen_id || "").replace(/\D/g, "").length === 13);
+  const bad = r.rows.length - valid.length;
+
+  showMsg("importMsg",
+    `อ่านข้อมูลได้ ${r.rows.length} แถว — ใช้ได้ ${valid.length} แถว` +
+    (bad ? `, ข้าม ${bad} แถว (เลขประจำตัวประชาชนไม่ครบ 13 หลัก)` : ""), bad === 0);
+
+  const show = r.rows.slice(0, 20);
+  $("previewBox").innerHTML = `
+    <div class="table-scroll"><table>
+      <thead><tr>${r.headers.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead>
+      <tbody>${show.map(row => `<tr>${r.headers.map(h => {
+        const bad = h === "citizen_id" && String(row[h] || "").replace(/\D/g, "").length !== 13;
+        return `<td style="${bad ? "color:var(--bad);font-weight:600" : ""}">${esc(row[h])}</td>`;
+      }).join("")}</tr>`).join("")}</tbody>
+    </table></div>
+    ${r.rows.length > 20 ? `<p class="hint" style="margin-top:8px">แสดง 20 แถวแรกจากทั้งหมด ${r.rows.length} แถว</p>` : ""}`;
+}
+
+async function doImport() {
+  const r = parseTable($("impData").value);
+  if (r.error) return showMsg("importMsg", r.error, false);
+
+  const stage = $("impStage").value;
+  const replace = $("impReplace").checked;
+  if (replace && !confirm("ยืนยันลบข้อมูลเดิมของรอบนี้ทั้งหมด แล้วนำเข้าข้อมูลชุดใหม่?")) return;
+
+  const btn = $("btnImport");
+  btn.disabled = true; btn.textContent = "กำลังนำเข้า…";
+  try {
+    const res = await api("/api/admin/records/import", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage, rows: r.rows, replace })
+    });
+    showMsg("importMsg",
+      `นำเข้าสำเร็จ ${res.imported} รายการ` + (res.skipped ? ` (ข้าม ${res.skipped} แถว)` : ""), true);
+    loadRecords();
+  } catch (e) {
+    showMsg("importMsg", e.message, false);
+  } finally {
+    btn.disabled = false; btn.textContent = "📥 นำเข้าข้อมูล";
+  }
+}
+
+async function loadRecords() {
+  const stage = $("impStage").value;
+  try {
+    const list = await api("/api/admin/records?stage=" + encodeURIComponent(stage));
+    if (!list.length) { $("recordsBox").innerHTML = '<p class="hint" style="margin-top:12px">ยังไม่มีข้อมูลในรอบนี้</p>'; return; }
+    const cols = ["citizen_id", "app_no", "full_name", "exam_type", "status", "seat_no", "room", "time_slot", "score", "rank_no"];
+    $("recordsBox").innerHTML = `
+      <p class="hint" style="margin-top:12px">ทั้งหมด ${list.length} รายการ</p>
+      <div class="table-scroll"><table>
+        <thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr></thead>
+        <tbody>${list.map(r => `<tr>${cols.map(c => `<td>${esc(r[c])}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table></div>`;
+  } catch (e) { showMsg("importMsg", e.message, false); }
+}
+
+async function clearStage() {
+  const stage = $("impStage").value;
+  if (!confirm("ยืนยันลบข้อมูลทั้งหมดของรอบ \"" + stage + "\"? การลบไม่สามารถย้อนกลับได้")) return;
+  try {
+    const res = await api("/api/admin/records?stage=" + encodeURIComponent(stage), { method: "DELETE" });
+    showMsg("importMsg", "ลบข้อมูลแล้ว " + res.deleted + " รายการ", true);
+    loadRecords();
+  } catch (e) { showMsg("importMsg", e.message, false); }
+}
+
+// ─── ประกาศ ─────────────────────────────────────────────────────────────────
+async function loadAnn() {
+  try {
+    const list = await api("/api/admin/announcements");
+    $("annList").innerHTML = list.length === 0 ? "ยังไม่มีประกาศ" : list.map(a => `
+      <div class="row-item">
+        <div class="t">${esc(a.title)} ${a.published ? "" : '<span class="hint">(ซ่อนอยู่)</span>'}</div>
+        <div class="b">${esc(a.body)}</div>
+        <div class="btn-row">
+          <button class="btn secondary sm" onclick='editAnn(${JSON.stringify(a).replace(/'/g, "&#39;")})'>✏️ แก้ไข</button>
+          <button class="btn red sm" onclick="delAnn(${a.id})">🗑️ ลบ</button>
+        </div>
+      </div>`).join("");
+  } catch (e) { $("annList").textContent = e.message; }
+}
+
+function editAnn(a) {
+  $("annId").value = a.id; $("annTitle").value = a.title; $("annBody").value = a.body;
+  $("annUrl").value = a.link_url || ""; $("annLabel").value = a.link_label || "";
+  $("annOrder").value = a.sort_order || 0; $("annPublished").checked = !!a.published;
+  $("annFormTitle").textContent = "✏️ แก้ไขประกาศ";
+  window.scrollTo(0, 0);
+}
+
+function resetAnn() {
+  ["annId", "annTitle", "annBody", "annUrl", "annLabel"].forEach(i => $(i).value = "");
+  $("annOrder").value = 0; $("annPublished").checked = true;
+  $("annFormTitle").textContent = "📢 เพิ่มประกาศใหม่";
+}
+
+async function saveAnn() {
+  const id = $("annId").value;
+  const body = {
+    title: $("annTitle").value.trim(), body: $("annBody").value,
+    link_url: $("annUrl").value.trim() || null, link_label: $("annLabel").value.trim() || null,
+    published: $("annPublished").checked ? 1 : 0, sort_order: parseInt($("annOrder").value, 10) || 0
+  };
+  if (!body.title || !body.body) return showMsg("annMsg", "กรุณากรอกหัวข้อและเนื้อหา", false);
+  try {
+    await api("/api/admin/announcements" + (id ? "/" + id : ""), {
+      method: id ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    showMsg("annMsg", "บันทึกประกาศเรียบร้อยแล้ว", true);
+    resetAnn(); loadAnn();
+  } catch (e) { showMsg("annMsg", e.message, false); }
+}
+
+async function delAnn(id) {
+  if (!confirm("ยืนยันลบประกาศนี้?")) return;
+  try {
+    await api("/api/admin/announcements/" + id, { method: "DELETE" });
+    showMsg("annMsg", "ลบประกาศแล้ว", true); loadAnn();
+  } catch (e) { showMsg("annMsg", e.message, false); }
+}
+
+// ─── FAQ ────────────────────────────────────────────────────────────────────
+async function loadFaq() {
+  try {
+    const list = await api("/api/admin/faqs");
+    $("faqList").innerHTML = list.length === 0 ? "ยังไม่มีคำถาม" : list.map(f => `
+      <div class="row-item">
+        <div class="t">${esc(f.question)} ${f.suggested ? '<span class="hint">⭐ ปุ่มลัด</span>' : ""}</div>
+        <div class="hint">คำสำคัญ: ${esc(f.keywords)}</div>
+        <div class="b">${esc(f.answer)}</div>
+        <div class="btn-row">
+          <button class="btn secondary sm" onclick='editFaq(${JSON.stringify(f).replace(/'/g, "&#39;")})'>✏️ แก้ไข</button>
+          <button class="btn red sm" onclick="delFaq(${f.id})">🗑️ ลบ</button>
+        </div>
+      </div>`).join("");
+  } catch (e) { $("faqList").textContent = e.message; }
+}
+
+function editFaq(f) {
+  $("faqId").value = f.id; $("faqKeywords").value = f.keywords;
+  $("faqQuestion").value = f.question; $("faqAnswer").value = f.answer;
+  $("faqOrder").value = f.sort_order || 0; $("faqSuggested").checked = !!f.suggested;
+  $("faqFormTitle").textContent = "✏️ แก้ไขคำถาม-คำตอบ";
+  window.scrollTo(0, 0);
+}
+
+function resetFaq() {
+  ["faqId", "faqKeywords", "faqQuestion", "faqAnswer"].forEach(i => $(i).value = "");
+  $("faqOrder").value = 0; $("faqSuggested").checked = false;
+  $("faqFormTitle").textContent = "💬 เพิ่มคำถาม-คำตอบ";
+}
+
+async function saveFaq() {
+  const id = $("faqId").value;
+  const body = {
+    keywords: $("faqKeywords").value.trim(), question: $("faqQuestion").value.trim(),
+    answer: $("faqAnswer").value, suggested: $("faqSuggested").checked ? 1 : 0,
+    sort_order: parseInt($("faqOrder").value, 10) || 0
+  };
+  if (!body.keywords || !body.question || !body.answer)
+    return showMsg("faqMsg", "กรุณากรอกคำสำคัญ คำถาม และคำตอบให้ครบ", false);
+  try {
+    await api("/api/admin/faqs" + (id ? "/" + id : ""), {
+      method: id ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    showMsg("faqMsg", "บันทึกเรียบร้อยแล้ว", true);
+    resetFaq(); loadFaq();
+  } catch (e) { showMsg("faqMsg", e.message, false); }
+}
+
+async function delFaq(id) {
+  if (!confirm("ยืนยันลบคำถามนี้?")) return;
+  try {
+    await api("/api/admin/faqs/" + id, { method: "DELETE" });
+    showMsg("faqMsg", "ลบแล้ว", true); loadFaq();
+  } catch (e) { showMsg("faqMsg", e.message, false); }
+}
+
+// ─── ใบสมัคร (Google Sheet) ─────────────────────────────────────────────────
+const EXAM_CSV_HEADERS = [
+  ["appNo","เลขที่ใบสมัคร"],["examType","ประเภทการสมัคร"],["applyGroup","กลุ่มการรับสมัคร"],
+  ["relationType","ความสัมพันธ์"],["psuPersonName","ชื่อบุคลากร/ศิษย์เก่า ม.อ."],
+  ["psuPersonType","ประเภทผู้เกี่ยวข้อง"],["psuPersonPhone","เบอร์โทรผู้เกี่ยวข้อง"],
+  ["prefix","คำนำหน้า"],["firstName","ชื่อ"],["lastName","นามสกุล"],["nickname","ชื่อเล่น"],
+  ["citizenId","เลขประจำตัวประชาชน"],["birthDate","วันเกิด"],["gender","เพศ"],
+  ["religion","ศาสนา"],["nationality","สัญชาติ"],["currentGrade","ระดับชั้นปัจจุบัน"],
+  ["school","โรงเรียนปัจจุบัน"],["schoolProvince","จังหวัดของโรงเรียน"],["gpax","GPAX"],
+  ["addressNo","บ้านเลขที่"],["moo","หมู่ที่"],["road","ถนน"],["subdistrict","ตำบล/แขวง"],
+  ["district","อำเภอ/เขต"],["province","จังหวัด"],["zipcode","รหัสไปรษณีย์"],
+  ["studentPhone","เบอร์โทรนักเรียน"],["studentEmail","อีเมลนักเรียน"],["lineId","LINE ID"],
+  ["fatherName","ชื่อ-สกุลบิดา"],["fatherPhone","เบอร์โทรบิดา"],["fatherJob","อาชีพบิดา"],
+  ["motherName","ชื่อ-สกุลมารดา"],["motherPhone","เบอร์โทรมารดา"],["motherJob","อาชีพมารดา"],
+  ["guardianName","ชื่อ-สกุลผู้ปกครอง"],["guardianRelation","ความเกี่ยวข้องกับนักเรียน"],
+  ["guardianPhone","เบอร์โทรผู้ปกครอง"],["dormInterest","ความสนใจหอพัก"],
+  ["knownFrom","ทราบข่าวจาก"],["specialNeeds","ข้อมูลสุขภาพ/ความต้องการพิเศษ"],
+  ["slipUrl","หลักฐานการชำระเงิน"],["docsUrl","เอกสาร ปพ.1 + ใบรับรองความประพฤติ"],
+  ["status","สถานะ"],["createdAt","วันที่สมัคร"],["updatedAt","แก้ไขล่าสุด"]
+];
+
+async function loadApps() {
+  if (!CFG.APPS_SCRIPT_URL || CFG.APPS_SCRIPT_URL.indexOf("PUT_YOUR") === 0)
+    return showMsg("appsMsg", "ยังไม่ได้ตั้งค่า APPS_SCRIPT_URL ในไฟล์ config.js", false);
+  showMsg("appsMsg", "กำลังโหลดข้อมูลจาก Google Sheet…", true);
+  try {
+    const r = await sheetApi("adminListExam");
+    if (r.status !== "SUCCESS") return showMsg("appsMsg", r.msg, false);
+    appsData = r.list || [];
+
+    const count = t => appsData.filter(a => a.examType.includes(t)).length;
+    $("appsStats").innerHTML = `
+      <div class="stat"><b>${appsData.length}</b><span>ใบสมัครทั้งหมด</span></div>
+      <div class="stat"><b>${count("ปีที่ 1")}</b><span>สอบเข้า ม.1</span></div>
+      <div class="stat"><b>${count("ปีที่ 4")}</b><span>สอบเข้า ม.4</span></div>
+      <div class="stat"><b>${count("Pre-Test")}</b><span>Pre-Test</span></div>`;
+
+    const cols = [["appNo","เลขที่"],["examType","ประเภท"],["applyGroup","กลุ่ม"],
+      ["prefix","ชื่อ-สกุล"],["currentGrade","ชั้น"],["school","โรงเรียน"],["gpax","GPAX"],
+      ["studentPhone","เบอร์นักเรียน"],["guardianPhone","เบอร์ผู้ปกครอง"],["createdAt","สมัครเมื่อ"]];
+    $("appsBox").innerHTML = `
+      <div class="table-scroll"><table>
+        <thead><tr>${cols.map(c => `<th>${esc(c[1])}</th>`).join("")}</tr></thead>
+        <tbody>${appsData.map(a => `<tr>${cols.map(c =>
+          `<td>${esc(c[0] === "prefix" ? a.prefix + a.firstName + " " + a.lastName : a[c[0]])}</td>`
+        ).join("")}</tr>`).join("")}</tbody>
+      </table></div>`;
+    showMsg("appsMsg", "โหลดข้อมูลสำเร็จ " + appsData.length + " รายการ", true);
+  } catch (e) { showMsg("appsMsg", "เชื่อมต่อ Google Sheet ไม่สำเร็จ: " + e.message, false); }
+}
+
+function downloadAppsCSV() {
+  if (!appsData.length) return showMsg("appsMsg", 'ยังไม่มีข้อมูล — กด "โหลดข้อมูลใบสมัคร" ก่อน', false);
+  const escCsv = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+  const lines = [EXAM_CSV_HEADERS.map(h => escCsv(h[1])).join(",")];
+  appsData.forEach(a => lines.push(EXAM_CSV_HEADERS.map(h => escCsv(a[h[0]])).join(",")));
+  const BOM = String.fromCharCode(0xFEFF);
+  const blob = new Blob([BOM + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "applicants2569_" + new Date().toISOString().slice(0, 10) + ".csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ─── init ───────────────────────────────────────────────────────────────────
+if (KEY) {
+  $("view-login").classList.remove("active");
+  enterAdmin().catch(() => {
+    $("view-login").classList.add("active");
+    $("mainNav").classList.add("hidden");
+    showMsg("loginMsg", "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่", false);
+  });
+}
+</script>
+</body>
+</html>

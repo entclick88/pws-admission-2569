@@ -1,0 +1,12 @@
+name = "pws-admission-api"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pws-admission"
+# ⚠️ หลังรัน `npx wrangler d1 create pws-admission` ให้นำ database_id ที่ได้มาวางตรงนี้
+database_id = "PUT_YOUR_D1_DATABASE_ID_HERE"
+
+# รหัสผู้ดูแลระบบ ตั้งเป็น secret (ไม่เก็บในไฟล์นี้):
+#   npx wrangler secret put ADMIN_KEY

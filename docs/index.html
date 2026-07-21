@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>งานรับนักเรียนใหม่ รร.มอ.ว.สฎ. ปีการศึกษา 2569</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--primary:#1a4f8b;--primary-dark:#123a68;--accent:#f5a623;--bg:#eef2f8;--card:#fff;
+        --text:#23303f;--muted:#6b7a8c;--ok:#1d8a4e;--bad:#c0392b;--line:#dde5ee}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+
+  header{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;padding:24px 16px;text-align:center}
+  header h1{font-size:1.32rem;font-weight:700}
+  header h2{font-size:1rem;font-weight:500;opacity:.92;margin-top:4px}
+  header .cta{display:inline-block;margin-top:14px;background:var(--accent);color:#3d2c00;font-weight:700;
+              padding:10px 26px;border-radius:99px;text-decoration:none;font-size:.95rem}
+  header .cta:hover{filter:brightness(1.07)}
+
+  nav{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;overflow-x:auto}
+  nav .wrap{max-width:960px;margin:0 auto;display:flex}
+  nav button{background:none;border:none;padding:13px 18px;font-family:inherit;font-size:.93rem;
+             cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
+  nav button.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+
+  main{max-width:960px;margin:22px auto 70px;padding:0 16px}
+  .view{display:none}.view.active{display:block}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:18px}
+  .card h3{font-size:1.06rem;color:var(--primary);margin-bottom:12px}
+  .card .body{white-space:pre-wrap;line-height:1.75}
+  .card .meta{font-size:.8rem;color:var(--muted);margin-top:10px}
+  .card a.doclink{display:inline-block;margin-top:12px;background:#eef4fb;color:var(--primary);
+                  padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem}
+  .card a.doclink:hover{background:#dfeaf7}
+
+  label{display:block;font-size:.87rem;font-weight:600;margin-bottom:5px}
+  input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:8px;
+        font-family:inherit;font-size:1rem;background:#fff;color:var(--text)}
+  input:focus{outline:2px solid #bcd2ec;border-color:var(--primary)}
+
+  button.btn{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:12px 26px;
+             font-family:inherit;font-size:.97rem;font-weight:600;cursor:pointer}
+  button.btn:hover{background:var(--primary-dark)}
+  button.btn.secondary{background:#e7edf5;color:var(--primary)}
+  button.btn:disabled{opacity:.55;cursor:not-allowed}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+
+  .msg{padding:12px 16px;border-radius:8px;margin:14px 0;font-size:.92rem;display:none;white-space:pre-wrap}
+  .msg.ok{display:block;background:#e8f6ee;color:var(--ok);border:1px solid #bfe5cf}
+  .msg.err{display:block;background:#fdecea;color:var(--bad);border:1px solid #f5c6c0}
+
+  .note{background:#fff8e8;border-left:4px solid var(--accent);border-radius:0 8px 8px 0;
+        padding:12px 16px;font-size:.88rem;margin:12px 0}
+  .hint{font-size:.82rem;color:var(--muted)}
+
+  .stage{border:1px solid var(--line);border-radius:12px;margin-bottom:16px;overflow:hidden;background:#fff}
+  .stage .head{padding:13px 18px;font-weight:600;display:flex;justify-content:space-between;
+               align-items:center;gap:10px;flex-wrap:wrap;background:#f4f7fb;border-bottom:1px solid var(--line)}
+  .stage .head .t{color:var(--primary)}
+  .stage .inner{padding:18px}
+  .badge{display:inline-block;padding:3px 13px;border-radius:99px;font-size:.8rem;font-weight:600}
+  .badge.pass{background:#e8f6ee;color:var(--ok)}
+  .badge.fail{background:#fdecea;color:var(--bad)}
+  .badge.wait{background:#f1f4f8;color:var(--muted)}
+
+  table.kv{width:100%;border-collapse:collapse}
+  table.kv td{padding:6px 4px;font-size:.93rem;vertical-align:top}
+  table.kv td.k{color:var(--muted);width:38%;white-space:nowrap}
+  table.kv td.v{font-weight:600}
+
+  .result-big{font-size:1.5rem;font-weight:700;text-align:center;margin:14px 0}
+
+  /* บัตรประจำตัวผู้เข้าสอบ */
+  .exam-card{border:2px solid var(--primary);border-radius:12px;padding:18px 20px;background:#fff;max-width:520px;margin:0 auto}
+  .exam-card .ch{text-align:center;border-bottom:2px solid var(--primary);padding-bottom:9px;margin-bottom:12px}
+  .exam-card .ch .s{font-weight:700;color:var(--primary);font-size:1rem}
+  .exam-card .ch .t{font-weight:600;font-size:.95rem;margin-top:2px}
+  .exam-card .seat{background:#eef4fb;border-radius:8px;padding:10px;text-align:center;margin-top:12px}
+  .exam-card .seat b{font-size:1.5rem;color:var(--primary);display:block}
+  .exam-card .foot{margin-top:12px;padding-top:10px;border-top:1px dashed #aab7c6;font-size:.8rem;color:#444;line-height:1.5}
+
+  /* Chatbot */
+  #chatLog{height:340px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;
+           padding:14px;background:#f8fafc;margin-bottom:10px}
+  .bubble{max-width:86%;padding:11px 15px;border-radius:14px;margin-bottom:10px;font-size:.93rem;
+          white-space:pre-wrap;line-height:1.6}
+  .bubble.user{background:var(--primary);color:#fff;margin-left:auto;border-bottom-right-radius:4px}
+  .bubble.bot{background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+  .chat-row{display:flex;gap:8px}
+  .chat-row input{flex:1}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .chip{background:#eef4fb;color:var(--primary);border:1px solid #d3e2f2;border-radius:99px;
+        padding:6px 15px;font-size:.85rem;cursor:pointer;font-family:inherit}
+  .chip:hover{background:#dfeaf7}
+
+  .hidden{display:none!important}
+  .loading{text-align:center;color:var(--muted);padding:24px}
+
+  @media print{
+    header,nav,.no-print,.stage .head{display:none!important}
+    body{background:#fff}
+    main{margin:0;padding:0;max-width:none}
+    .card,.stage{border:none;padding:0;margin:0}
+    .exam-card{max-width:none;page-break-inside:avoid}
+    @page{size:A4;margin:14mm}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>โรงเรียน มอ. วิทยานุสรณ์ สุราษฎร์ธานี</h1>
+  <h2>งานรับนักเรียนใหม่ ปีการศึกษา 2569</h2>
+  <a class="cta" href="register.html">📝 สมัครสอบออนไลน์</a>
+</header>
+
+<nav>
+  <div class="wrap">
+    <button data-v="home"   class="active" onclick="go('home')">📢 ประกาศ</button>
+    <button data-v="search" onclick="go('search')">🔍 สืบค้นรายบุคคล</button>
+    <button data-v="chat"   onclick="go('chat')">💬 ถาม-ตอบ</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ═══ ประกาศ ═══ -->
+<section id="view-home" class="view active">
+  <div id="announceBox"><div class="card loading">กำลังโหลดประกาศ…</div></div>
+</section>
+
+<!-- ═══ สืบค้นรายบุคคล ═══ -->
+<section id="view-search" class="view">
+  <div class="card no-print">
+    <h3>🔍 สืบค้นข้อมูลรายบุคคล</h3>
+    <p class="hint" style="margin-bottom:14px">
+      กรอกเลขประจำตัวประชาชนของ<b>ผู้สมัคร</b> 13 หลัก เพื่อดูรายชื่อผู้มีสิทธิ์สอบ เลขที่นั่งสอบ
+      บัตรประจำตัวผู้เข้าสอบ และผลการสอบของตนเอง (ระบบแสดงเฉพาะข้อมูลของผู้สมัครรายนั้นเท่านั้น)</p>
+    <div class="msg" id="searchMsg"></div>
+    <label>เลขประจำตัวประชาชน 13 หลัก</label>
+    <input id="cidInput" maxlength="13" inputmode="numeric" placeholder="กรอกเฉพาะตัวเลข"
+           onkeydown="if(event.key==='Enter')doSearch()">
+    <div class="btn-row">
+      <button class="btn" id="btnSearch" onclick="doSearch()">ค้นหาข้อมูล</button>
+      <button class="btn secondary hidden" id="btnPrint" onclick="window.print()">🖨️ พิมพ์บัตรประจำตัวผู้เข้าสอบ</button>
+    </div>
+  </div>
+  <div id="searchResult"></div>
+</section>
+
+<!-- ═══ Chatbot ═══ -->
+<section id="view-chat" class="view">
+  <div class="card">
+    <h3>💬 น้องแอดมิท — ผู้ช่วยตอบคำถามการรับสมัคร</h3>
+    <p class="hint" style="margin-bottom:12px">ตอบจากข้อมูลในประกาศรับสมัครฉบับเต็ม ลองกดคำถามยอดฮิตด้านล่างได้เลย</p>
+    <div class="chips" id="chipBox"></div>
+    <div id="chatLog">
+      <div class="bubble bot">สวัสดีค่ะ 🙋‍♀️ น้องแอดมิทยินดีตอบคำถามเกี่ยวกับการรับสมัครนักเรียนใหม่ ปีการศึกษา 2569 ค่ะ
+พิมพ์คำถามได้เลย เช่น "ค่าสมัครเท่าไร" "สอบวันไหน" "ใช้เอกสารอะไรบ้าง"</div>
+    </div>
+    <div class="chat-row">
+      <input id="chatInput" placeholder="พิมพ์คำถามที่นี่…" onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="btn" onclick="sendChat()">ส่ง</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script src="config.js"></script>
+<script>
+const CFG = window.PWS_CONFIG || {};
+const API = (CFG.WORKER_URL || "").replace(/\/+$/, "");
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+async function api(path, options) {
+  const res = await fetch(API + path, options);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "เชื่อมต่อระบบไม่สำเร็จ");
+  return data;
+}
+
+function go(v) {
+  document.querySelectorAll(".view").forEach(el => el.classList.remove("active"));
+  $("view-" + v).classList.add("active");
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.v === v));
+  if (v === "chat" && !chipsLoaded) loadChips();
+  window.scrollTo(0, 0);
+}
+
+function showMsg(id, text, ok) {
+  const el = $(id);
+  el.textContent = text;
+  el.className = "msg " + (ok ? "ok" : "err");
+}
+
+// ─── ประกาศ ─────────────────────────────────────────────────────────────────
+async function loadAnnouncements() {
+  try {
+    const list = await api("/api/announcements");
+    if (!list.length) {
+      $("announceBox").innerHTML = '<div class="card"><p class="hint">ยังไม่มีประกาศ</p></div>';
+      return;
+    }
+    $("announceBox").innerHTML = list.map(a => `
+      <div class="card">
+        <h3>${esc(a.title)}</h3>
+        <div class="body">${esc(a.body)}</div>
+        ${a.link_url ? `<a class="doclink" href="${esc(a.link_url)}" target="_blank" rel="noopener">
+          📄 ${esc(a.link_label || "เปิดเอกสาร")}</a>` : ""}
+      </div>`).join("");
+  } catch (e) {
+    $("announceBox").innerHTML =
+      `<div class="card"><p class="hint">โหลดประกาศไม่สำเร็จ: ${esc(e.message)}</p></div>`;
+  }
+}
+
+// ─── สืบค้นรายบุคคล ─────────────────────────────────────────────────────────
+function validThaiId(id) {
+  id = String(id).replace(/\D/g, "");
+  if (id.length !== 13) return false;
+  let sum = 0;
+  for (let i = 0; i < 12; i++) sum += parseInt(id[i]) * (13 - i);
+  return (11 - (sum % 11)) % 10 === parseInt(id[12]);
+}
+
+function kv(k, v) {
+  return v ? `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td></tr>` : "";
+}
+
+// การ์ดบัตรประจำตัวผู้เข้าสอบ (พิมพ์ลงกระดาษ A4 ได้)
+function examCardHtml(r, cid, title, extraFoot) {
+  return `
+  <div class="exam-card">
+    <div class="ch">
+      <div class="s">โรงเรียน มอ. วิทยานุสรณ์ สุราษฎร์ธานี</div>
+      <div class="t">${esc(title)}</div>
+    </div>
+    <table class="kv">
+      ${kv("ชื่อ - สกุล", r.full_name)}
+      ${kv("เลขประจำตัวประชาชน", cid)}
+      ${kv("เลขที่ใบสมัคร", r.app_no)}
+      ${kv("การสมัครสอบ", r.exam_type)}
+      ${kv("ห้องสอบ", r.room)}
+      ${kv("ห้องรายงานตัว", r.report_room)}
+      ${kv("วันสอบ", r.exam_date)}
+      ${kv("เวลา", r.time_slot)}
+    </table>
+    ${r.seat_no ? `<div class="seat">เลขที่นั่งสอบ<b>${esc(r.seat_no)}</b></div>` : ""}
+    ${r.note ? `<p class="hint" style="margin-top:10px">หมายเหตุ: ${esc(r.note)}</p>` : ""}
+    <div class="foot">${extraFoot}</div>
+  </div>`;
+}
+
+const FOOT_ROUND1 =
+  "วันสอบ : วันอาทิตย์ที่ 25 มกราคม 2569 เวลา 07.30 - 12.00 น.<br>" +
+  "สนามสอบ : อาคารศูนย์การเรียนรู้ มหาวิทยาลัยสงขลานครินทร์ วิทยาเขตสุราษฎร์ธานี<br>" +
+  "07.30 - 08.30 น. รายงานตัว แสดงบัตรประจำตัวผู้เข้าสอบและบัตรประชาชนตัวจริง<br>" +
+  "09.00 - 12.00 น. สอบ 3 วิชา วิทยาศาสตร์ คณิตศาสตร์ ภาษาอังกฤษ<br>" +
+  "<b>ให้พิมพ์บัตรนี้ลงกระดาษ A4 แนวตั้ง และตัดเฉพาะส่วนบัตรมาในวันสอบ</b>";
+
+const FOOT_INTERVIEW =
+  "วันสอบสัมภาษณ์ : วันอาทิตย์ที่ 15 กุมภาพันธ์ 2569 เวลา 08.30 - 16.30 น.<br>" +
+  "สนามสอบ : อาคารโรงเรียน มอ. วิทยานุสรณ์ สุราษฎร์ธานี<br>" +
+  "สอบสัมภาษณ์นักเรียนพร้อมผู้ปกครอง ใช้เวลาไม่เกินคนละ 20 นาที<br>" +
+  "มาถึงสนามสอบเพื่อรายงานตัวอย่างน้อย 20 นาที · แต่งกายด้วยชุดเครื่องแบบนักเรียน<br>" +
+  "เอกสารที่ต้องนำมาแสดง : บัตรประจำตัวประชาชน (ไม่ต้องพิมพ์บัตรนี้ลงกระดาษ)";
+
+function resultHtml(r) {
+  const passed = String(r.status || "").includes("ผ่าน") && !String(r.status).includes("ไม่ผ่าน");
+  return `
+    <div class="result-big" style="color:${passed ? "var(--ok)" : "var(--bad)"}">
+      ${passed ? "🎉 " : ""}${esc(r.status || "-")}</div>
+    <table class="kv">
+      ${kv("ชื่อ - สกุล", r.full_name)}
+      ${kv("เลขที่ใบสมัคร", r.app_no)}
+      ${kv("การสมัครสอบ", r.exam_type)}
+      ${kv("คะแนน", r.score)}
+      ${kv("ลำดับที่", r.rank_no)}
+    </table>
+    ${r.note ? `<p class="hint" style="margin-top:10px">${esc(r.note)}</p>` : ""}`;
+}
+
+async function doSearch() {
+  const cid = $("cidInput").value.replace(/\D/g, "");
+  if (!validThaiId(cid)) return showMsg("searchMsg", "เลขประจำตัวประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง", false);
+
+  const btn = $("btnSearch");
+  btn.disabled = true; btn.textContent = "กำลังค้นหา…";
+  $("searchResult").innerHTML = '<div class="card loading">กำลังค้นหาข้อมูล…</div>';
+  $("btnPrint").classList.add("hidden");
+
+  try {
+    const data = await api("/api/lookup?cid=" + encodeURIComponent(cid));
+    showMsg("searchMsg", "", true);
+    $("searchMsg").className = "msg";
+
+    let hasCard = false;
+    const html = data.stages.map(s => {
+      let inner;
+      if (!s.published) {
+        inner = `<span class="badge wait">ยังไม่ถึงกำหนดประกาศ</span>
+                 <p class="hint" style="margin-top:10px">${esc(s.publish_note || "")}</p>`;
+      } else if (!s.record) {
+        inner = `<p class="hint">ไม่พบข้อมูลของเลขประจำตัวประชาชนนี้ในรอบดังกล่าว<br>
+                 หากคิดว่าข้อมูลไม่ถูกต้อง โปรดติดต่อโรงเรียนทาง ID LINE : psuwitsurat</p>`;
+      } else if (s.code === "exam_card") {
+        hasCard = true;
+        inner = examCardHtml(s.record, data.citizen_id, "บัตรประจำตัวผู้เข้าสอบ", FOOT_ROUND1);
+      } else if (s.code === "interview") {
+        hasCard = true;
+        inner = examCardHtml(s.record, data.citizen_id, "บัตรประจำตัวสอบสัมภาษณ์ (รอบสอง)", FOOT_INTERVIEW);
+      } else {
+        inner = resultHtml(s.record);
+      }
+      return `<div class="stage"><div class="head"><span class="t">${esc(s.title)}</span></div>
+              <div class="inner">${inner}</div></div>`;
+    }).join("");
+
+    $("searchResult").innerHTML = html;
+    $("btnPrint").classList.toggle("hidden", !hasCard);
+  } catch (e) {
+    $("searchResult").innerHTML = "";
+    showMsg("searchMsg", e.message, false);
+  } finally {
+    btn.disabled = false; btn.textContent = "ค้นหาข้อมูล";
+  }
+}
+
+// ─── Chatbot ────────────────────────────────────────────────────────────────
+let chipsLoaded = false;
+
+async function loadChips() {
+  chipsLoaded = true;
+  try {
+    const list = await api("/api/faqs?suggested=1");
+    $("chipBox").innerHTML = list.map(f =>
+      `<button class="chip" onclick="askText(this.dataset.q)" data-q="${esc(f.question)}">${esc(f.question)}</button>`
+    ).join("");
+  } catch (e) { /* ไม่มีปุ่มลัดก็ยังพิมพ์ถามได้ */ }
+}
+
+function addBubble(text, who) {
+  const log = $("chatLog");
+  const d = document.createElement("div");
+  d.className = "bubble " + who;
+  d.textContent = text;
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+  return d;
+}
+
+function askText(q) { $("chatInput").value = q; sendChat(); }
+
+async function sendChat() {
+  const inp = $("chatInput");
+  const q = inp.value.trim();
+  if (!q) return;
+  inp.value = "";
+  addBubble(q, "user");
+  const thinking = addBubble("กำลังค้นหาคำตอบ…", "bot");
+  try {
+    const r = await api("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ q })
+    });
+    thinking.textContent = r.answer;
+  } catch (e) {
+    thinking.textContent = "เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้งค่ะ";
+  }
+}
+
+// ─── init ───────────────────────────────────────────────────────────────────
+$("cidInput").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, ""); });
+loadAnnouncements();
+</script>
+</body>
+</html>

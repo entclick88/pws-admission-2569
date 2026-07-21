@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สมัครสอบ รร.มอ.ว.สฎ. ปีการศึกษา 2569</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary:#1a4f8b; --primary-dark:#123a68; --accent:#f5a623;
+    --bg:#eef2f8; --card:#fff; --text:#23303f; --muted:#6b7a8c;
+    --ok:#1d8a4e; --bad:#c0392b; --line:#dde5ee;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+
+  header{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;padding:22px 16px;text-align:center}
+  header h1{font-size:1.3rem;font-weight:700}
+  header h2{font-size:1rem;font-weight:500;opacity:.92;margin-top:4px}
+  header .period{display:inline-block;margin-top:10px;background:rgba(255,255,255,.16);
+                 padding:5px 16px;border-radius:99px;font-size:.87rem}
+
+  nav{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;overflow-x:auto}
+  nav .wrap{max-width:960px;margin:0 auto;display:flex}
+  nav button{background:none;border:none;padding:13px 18px;font-family:inherit;font-size:.93rem;
+             cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
+  nav button.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+
+  main{max-width:960px;margin:22px auto 70px;padding:0 16px}
+  .view{display:none}.view.active{display:block}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:18px}
+  .card h3{font-size:1.05rem;color:var(--primary);margin-bottom:14px;padding-bottom:10px;
+           border-bottom:2px solid #eef3f9;display:flex;align-items:center;gap:8px}
+  .step-no{background:var(--primary);color:#fff;width:26px;height:26px;border-radius:50%;
+           display:inline-flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+
+  label{display:block;font-size:.87rem;font-weight:600;margin-bottom:5px}
+  .req{color:var(--bad)}
+  input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+                        font-family:inherit;font-size:.95rem;background:#fff;color:var(--text)}
+  input:focus,select:focus,textarea:focus{outline:2px solid #bcd2ec;border-color:var(--primary)}
+  input[type=file]{padding:8px;background:#f8fafc}
+  input:disabled,select:disabled{background:#f1f4f8;color:#9aa7b5}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+  .grid .full{grid-column:1/-1}
+  .grid .half{grid-column:span 1}
+
+  .radio-card{display:block;border:2px solid var(--line);border-radius:10px;padding:14px 16px;
+              margin-bottom:10px;cursor:pointer;transition:.15s}
+  .radio-card:hover{border-color:#a9c4e2;background:#f7fafd}
+  .radio-card.sel{border-color:var(--primary);background:#eef4fb}
+  .radio-card input{width:auto;margin-right:10px}
+  .radio-card b{font-size:.97rem}
+  .radio-card .d{font-size:.83rem;color:var(--muted);margin-left:26px}
+
+  .msg{padding:12px 16px;border-radius:8px;margin:14px 0;font-size:.92rem;display:none;white-space:pre-wrap}
+  .msg.ok{display:block;background:#e8f6ee;color:var(--ok);border:1px solid #bfe5cf}
+  .msg.err{display:block;background:#fdecea;color:var(--bad);border:1px solid #f5c6c0}
+
+  .note{background:#fff8e8;border-left:4px solid var(--accent);border-radius:0 8px 8px 0;
+        padding:12px 16px;font-size:.88rem;margin:12px 0}
+  .note b{color:#8a6100}
+  .hint{font-size:.81rem;color:var(--muted);margin-top:4px}
+
+  button.btn{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:12px 26px;
+             font-family:inherit;font-size:.97rem;font-weight:600;cursor:pointer}
+  button.btn:hover{background:var(--primary-dark)}
+  button.btn.secondary{background:#e7edf5;color:var(--primary)}
+  button.btn.green{background:var(--ok)}
+  button.btn:disabled{opacity:.55;cursor:not-allowed}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+
+  .hidden{display:none!important}
+  @media(max-width:600px){.grid{grid-template-columns:1fr}}
+
+  /* ───── ใบสมัคร (A4) สำหรับพิมพ์ / บันทึกเป็น PDF ───── */
+  #slipWrap{background:#fff;border-radius:12px;padding:0;overflow:hidden}
+  /* ความสูงรวมต้องไม่เกินอัตราส่วน A4 (สูง/กว้าง = 1.45) มิฉะนั้น PDF จะล้นไปหน้าที่ 2 */
+  #appSlip{width:190mm;padding:8mm 10mm;background:#fff;color:#000;
+           font-size:12px;line-height:1.32;margin:0 auto}
+  #appSlip .sHead{text-align:center;border-bottom:2px solid #1a4f8b;padding-bottom:7px;margin-bottom:9px}
+  #appSlip .sHead .school{font-size:16px;font-weight:700;color:#1a4f8b}
+  #appSlip .sHead .title{font-size:14px;font-weight:600;margin-top:2px}
+  #appSlip .sHead .year{font-size:12px;color:#444}
+  #appSlip .noBox{float:right;border:2px solid #1a4f8b;border-radius:7px;padding:5px 13px;text-align:center;
+                  margin:-3px 0 5px 10px}
+  #appSlip .noBox span{font-size:10px;color:#555;display:block;line-height:1.2}
+  #appSlip .noBox b{font-size:16px;color:#1a4f8b;letter-spacing:1px}
+  #appSlip h4{font-size:12.5px;color:#1a4f8b;margin:9px 0 3px;padding:3px 8px;background:#eef3f9;
+              border-left:4px solid #1a4f8b;border-radius:0 4px 4px 0}
+  #appSlip table{width:100%;border-collapse:collapse}
+  #appSlip td{padding:2.2px 5px;vertical-align:top;font-size:11.5px;line-height:1.3}
+  #appSlip td.k{color:#555;width:33%;white-space:nowrap}
+  #appSlip td.v{font-weight:600;border-bottom:1px dotted #b9c4d0}
+  #appSlip .foot{margin-top:10px;border-top:1px solid #ccc;padding-top:7px;font-size:10.5px;color:#444;line-height:1.4}
+  #appSlip .sign{margin-top:14px;text-align:right;font-size:11.5px;line-height:1.5}
+  #appSlip .sign .line{display:inline-block;width:56mm;border-bottom:1px dotted #666;margin-bottom:2px}
+  .slip-scroll{overflow-x:auto;background:#f4f6fa;padding:14px 0}
+
+  @media print{
+    body{background:#fff}
+    header,nav,.no-print{display:none!important}
+    main{margin:0;padding:0;max-width:none}
+    .card{border:none;padding:0;margin:0}
+    .slip-scroll{padding:0;background:#fff}
+    #appSlip{width:auto;min-height:auto;padding:0;font-size:12.5px}
+    @page{size:A4;margin:12mm}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>โรงเรียน มอ. วิทยานุสรณ์ สุราษฎร์ธานี</h1>
+  <h2>รับสมัครสอบคัดเลือกนักเรียน ม.1 และ ม.4 และสอบวัดความรู้ (Pre-Test) ปีการศึกษา 2569</h2>
+  <div class="period">📅 เปิดรับสมัคร 3 พฤศจิกายน 2568 – 5 มกราคม 2569</div>
+</header>
+
+<nav>
+  <div class="wrap">
+    <button data-v="form"   class="active" onclick="go('form')">📝 กรอกใบสมัคร</button>
+    <button data-v="lookup" onclick="go('lookup')">🔍 สืบค้น / แก้ไขใบสมัคร</button>
+    <button data-v="info"   onclick="go('info')">ℹ️ ขั้นตอนการสมัคร</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ═══════════════ กรอกใบสมัคร ═══════════════ -->
+<section id="view-form" class="view active">
+
+  <div class="note">
+    <b>⚠️ ก่อนกรอกใบสมัคร</b> โปรดชำระค่าธรรมเนียมการสมัครสอบ <b>500 บาท</b>
+    ผ่าน QR Code Payment ที่โรงเรียนกำหนด (Biller ID 099400092806804, Ref.1/Ref.2 : 2569)
+    แล้วบันทึกภาพหลักฐานการชำระเงินไว้สำหรับอัปโหลดในขั้นตอนสุดท้าย
+    <br>นักเรียนที่กำลังศึกษาชั้น ป.6 หรือ ม.3 <b>ต้องเลือกสมัครเพียงอย่างใดอย่างหนึ่ง</b>
+    ระหว่างสอบคัดเลือกเข้าศึกษาต่อ หรือสอบวัดความรู้ (Pre-Test) เนื่องจากจัดสอบวันและเวลาเดียวกัน
+  </div>
+
+  <div class="msg" id="formMsg"></div>
+
+  <!-- 1. ประเภทการสมัคร -->
+  <div class="card">
+    <h3><span class="step-no">1</span> ประเภทการสมัคร</h3>
+    <div id="examTypeBox"></div>
+  </div>
+
+  <!-- 2. กลุ่มการรับสมัคร -->
+  <div class="card hidden" id="groupCard">
+    <h3><span class="step-no">2</span> กลุ่มการรับสมัคร</h3>
+    <div id="groupBox"></div>
+
+    <div class="hidden" id="psuBox">
+      <div class="note">
+        ผู้สมัครกลุ่มบุตร น้อง หลาน บุคลากร / ศิษย์เก่า ม.อ. ต้องส่งเอกสารประกอบการพิจารณาสิทธิ์
+        ทางอีเมล <b>pws-newgen@psuwitsurat.ac.th</b> ภายในวันที่ 5 มกราคม 2569
+        มิฉะนั้นจะถือเป็นผู้สมัครกลุ่มบุคคลทั่วไป
+      </div>
+      <div class="grid">
+        <div><label>นักเรียนเป็น <span class="req">*</span></label>
+          <select id="f_relationType"><option value="">— เลือก —</option>
+            <option>บุตร</option><option>น้อง</option><option>หลาน</option></select></div>
+        <div><label>ผู้ใช้สิทธิ์เป็น <span class="req">*</span></label>
+          <select id="f_psuPersonType"><option value="">— เลือก —</option>
+            <option>บุคลากร ม.อ. / รร.มอ.ว.สฎ.</option><option>ศิษย์เก่า ม.อ.</option></select></div>
+        <div><label>ชื่อ-สกุล บุคลากร / ศิษย์เก่า ม.อ. <span class="req">*</span></label>
+          <input id="f_psuPersonName"></div>
+        <div><label>เบอร์โทรผู้ใช้สิทธิ์</label><input id="f_psuPersonPhone" inputmode="tel"></div>
+      </div>
+    </div>
+
+    <div class="hidden" id="donorBox">
+      <div class="note">
+        ผู้สมัครกลุ่มผู้มีอุปการคุณ ต้องมอบทุนการศึกษาให้แก่มูลนิธิเพื่อการศึกษาโรงเรียน มอ. วิทยานุสรณ์ สุราษฎร์ธานี
+        อย่างน้อย <b>2 ทุน (ทุนละ 50,000 บาท)</b> ในวันยืนยันสิทธิ์และชำระค่าธรรมเนียมแรกเข้า (19–24 ก.พ. 2569)
+        สอบถามเพิ่มเติม 06 2784 1552
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. ข้อมูลนักเรียน -->
+  <div class="card">
+    <h3><span class="step-no">3</span> ข้อมูลนักเรียนผู้สมัคร</h3>
+    <div class="grid">
+      <div><label>คำนำหน้า <span class="req">*</span></label>
+        <select id="f_prefix"><option value="">—</option>
+          <option>เด็กชาย</option><option>เด็กหญิง</option><option>นาย</option><option>นางสาว</option></select></div>
+      <div><label>ชื่อ <span class="req">*</span></label><input id="f_firstName"></div>
+      <div><label>นามสกุล <span class="req">*</span></label><input id="f_lastName"></div>
+      <div><label>ชื่อเล่น</label><input id="f_nickname"></div>
+      <div><label>เลขประจำตัวประชาชน 13 หลัก <span class="req">*</span></label>
+        <input id="f_citizenId" maxlength="13" inputmode="numeric" placeholder="กรอกเฉพาะตัวเลข">
+        <div class="hint">ใช้เป็นรหัสสืบค้นรายชื่อผู้มีสิทธิ์สอบและผลสอบ</div></div>
+      <div><label>วันเกิด <span class="req">*</span></label><input id="f_birthDate" type="date"></div>
+      <div><label>เพศ</label><select id="f_gender"><option value="">—</option>
+        <option>ชาย</option><option>หญิง</option></select></div>
+      <div><label>ศาสนา</label><select id="f_religion"><option value="">—</option>
+        <option>พุทธ</option><option>อิสลาม</option><option>คริสต์</option><option>อื่น ๆ</option></select></div>
+      <div><label>สัญชาติ</label><input id="f_nationality" value="ไทย"></div>
+    </div>
+  </div>
+
+  <!-- 4. ข้อมูลการศึกษา -->
+  <div class="card">
+    <h3><span class="step-no">4</span> ข้อมูลการศึกษาปัจจุบัน</h3>
+    <div class="grid">
+      <div><label>ระดับชั้นปัจจุบัน (ปีการศึกษา 2568) <span class="req">*</span></label>
+        <select id="f_currentGrade"><option value="">— เลือก —</option></select></div>
+      <div><label>โรงเรียนปัจจุบัน <span class="req">*</span></label><input id="f_school"></div>
+      <div><label>จังหวัดของโรงเรียน</label><input id="f_schoolProvince"></div>
+      <div id="gpaxField"><label>ผลการเรียนเฉลี่ยสะสม (GPAX) <span class="req" id="gpaxReq">*</span></label>
+        <input id="f_gpax" inputmode="decimal" placeholder="เช่น 3.25">
+        <div class="hint" id="gpaxHint">ผู้สมัคร ม.4 ต้องมี GPAX ชั้น ม.1 และ ม.2 (4 ภาคเรียน) ไม่ต่ำกว่า 2.50</div></div>
+    </div>
+  </div>
+
+  <!-- 5. ที่อยู่และการติดต่อ -->
+  <div class="card">
+    <h3><span class="step-no">5</span> ที่อยู่และช่องทางติดต่อ</h3>
+    <div class="grid">
+      <div><label>บ้านเลขที่</label><input id="f_addressNo"></div>
+      <div><label>หมู่ที่</label><input id="f_moo"></div>
+      <div><label>ถนน</label><input id="f_road"></div>
+      <div><label>ตำบล / แขวง</label><input id="f_subdistrict"></div>
+      <div><label>อำเภอ / เขต</label><input id="f_district"></div>
+      <div><label>จังหวัด</label><input id="f_province"></div>
+      <div><label>รหัสไปรษณีย์</label><input id="f_zipcode" maxlength="5" inputmode="numeric"></div>
+      <div><label>เบอร์โทรนักเรียน <span class="req">*</span></label><input id="f_studentPhone" inputmode="tel"></div>
+      <div><label>อีเมลนักเรียน</label><input id="f_studentEmail" type="email"></div>
+      <div><label>LINE ID</label><input id="f_lineId"></div>
+    </div>
+  </div>
+
+  <!-- 6. ข้อมูลบิดา มารดา ผู้ปกครอง -->
+  <div class="card">
+    <h3><span class="step-no">6</span> ข้อมูลบิดา มารดา และผู้ปกครอง</h3>
+    <div class="grid">
+      <div><label>ชื่อ-สกุลบิดา</label><input id="f_fatherName"></div>
+      <div><label>เบอร์โทรบิดา</label><input id="f_fatherPhone" inputmode="tel"></div>
+      <div><label>อาชีพบิดา</label><input id="f_fatherJob"></div>
+      <div><label>ชื่อ-สกุลมารดา</label><input id="f_motherName"></div>
+      <div><label>เบอร์โทรมารดา</label><input id="f_motherPhone" inputmode="tel"></div>
+      <div><label>อาชีพมารดา</label><input id="f_motherJob"></div>
+      <div><label>ชื่อ-สกุลผู้ปกครอง <span class="req">*</span></label><input id="f_guardianName"></div>
+      <div><label>ความเกี่ยวข้องกับนักเรียน</label>
+        <select id="f_guardianRelation"><option value="">—</option>
+          <option>บิดา</option><option>มารดา</option><option>ปู่/ย่า/ตา/ยาย</option>
+          <option>ลุง/ป้า/น้า/อา</option><option>พี่</option><option>อื่น ๆ</option></select></div>
+      <div><label>เบอร์โทรผู้ปกครอง <span class="req">*</span></label><input id="f_guardianPhone" inputmode="tel"></div>
+    </div>
+  </div>
+
+  <!-- 7. ข้อมูลเพิ่มเติม -->
+  <div class="card">
+    <h3><span class="step-no">7</span> ข้อมูลเพิ่มเติม</h3>
+    <div class="grid">
+      <div><label>ความสนใจเข้าพักหอพักนักเรียน</label>
+        <select id="f_dormInterest"><option value="">—</option>
+          <option>สนใจ</option><option>ไม่สนใจ</option><option>ยังไม่ตัดสินใจ</option></select></div>
+      <div><label>ทราบข่าวการรับสมัครจาก</label>
+        <select id="f_knownFrom"><option value="">—</option>
+          <option>เว็บไซต์โรงเรียน</option><option>Facebook</option><option>TikTok</option>
+          <option>LINE Open Chat</option><option>ครู / โรงเรียนเดิม</option>
+          <option>ผู้ปกครอง / คนรู้จัก</option><option>อื่น ๆ</option></select></div>
+      <div class="full"><label>โรคประจำตัว การแพ้ยา หรือความต้องการพิเศษในวันสอบ</label>
+        <textarea id="f_specialNeeds" rows="2" placeholder="ถ้าไม่มี เว้นว่างไว้ได้"></textarea></div>
+    </div>
+  </div>
+
+  <!-- 8. เอกสารแนบ -->
+  <div class="card">
+    <h3><span class="step-no">8</span> เอกสารแนบ</h3>
+    <div class="grid">
+      <div class="full"><label>ภาพหลักฐานการชำระค่าธรรมเนียมการสมัครสอบ 500 บาท <span class="req">*</span></label>
+        <input type="file" id="f_slipFile" accept="image/*,application/pdf">
+        <div class="hint">ไฟล์ภาพหรือ PDF ขนาดไม่เกิน 8 MB</div></div>
+      <div class="full hidden" id="docsField">
+        <label>ระเบียนแสดงผลการเรียน (ปพ.1 : บ) และใบรับรองความประพฤติ <span class="req">*</span></label>
+        <input type="file" id="f_docsFile" accept="application/pdf">
+        <div class="hint">เฉพาะผู้สมัคร ม.4 — รวมเป็นไฟล์ <b>PDF ไฟล์เดียว</b> ขนาดไม่เกิน 8 MB
+          (ปพ.1 : บ ชั้น ม.1 และ ม.2 ทั้งด้านหน้าและด้านหลัง มีรูปถ่าย ลายเซ็นนายทะเบียนและผู้อำนวยการ
+          พร้อมตราประทับโรงเรียน)</div></div>
+    </div>
+  </div>
+
+  <!-- 9. รับรองข้อมูล -->
+  <div class="card">
+    <h3><span class="step-no">9</span> การรับรองข้อมูล</h3>
+    <label class="radio-card" id="consentCard">
+      <input type="checkbox" id="f_consent" onchange="syncConsent()">
+      <b>ข้าพเจ้าขอรับรองว่าข้อมูลและคุณสมบัติข้างต้นเป็นความจริงทุกประการ</b>
+      <div class="d">หากภายหลังตรวจพบว่าคุณสมบัติไม่ตรงตามเกณฑ์ เอกสารไม่ครบถ้วน หรือส่งไม่ตรงตามเวลาที่กำหนด
+        โรงเรียนขอถือว่าการสมัครเป็นโมฆะ และสงวนสิทธิ์ไม่คืนเงินค่าสมัครสอบ
+        รวมทั้งยินยอมให้โรงเรียนเก็บและใช้ข้อมูลส่วนบุคคลเพื่อกระบวนการรับสมัครสอบ</div>
+    </label>
+    <div class="btn-row">
+      <button class="btn green" id="btnSubmit" onclick="submitForm()">📨 ส่งใบสมัคร</button>
+      <button class="btn secondary" onclick="if(confirm('ล้างข้อมูลทั้งหมดในฟอร์ม?'))location.reload()">ล้างฟอร์ม</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ สืบค้น / แก้ไข ═══════════════ -->
+<section id="view-lookup" class="view">
+  <div class="card">
+    <h3>🔍 สืบค้นใบสมัคร</h3>
+    <p class="hint" style="margin-bottom:14px">
+      กรอกเลขประจำตัวประชาชนและวันเกิดของนักเรียน เพื่อพิมพ์ใบสมัครซ้ำหรือแก้ไขข้อมูล
+      (แก้ไขได้ถึงวันที่ 5 มกราคม 2569)</p>
+    <div class="msg" id="lookupMsg"></div>
+    <div class="grid">
+      <div><label>เลขประจำตัวประชาชน 13 หลัก</label>
+        <input id="lk_cid" maxlength="13" inputmode="numeric"></div>
+      <div><label>วันเกิด</label><input id="lk_dob" type="date"></div>
+    </div>
+    <div class="btn-row"><button class="btn" onclick="doLookup()">ค้นหาใบสมัคร</button></div>
+  </div>
+</section>
+
+<!-- ═══════════════ ขั้นตอนการสมัคร ═══════════════ -->
+<section id="view-info" class="view">
+  <div class="card">
+    <h3>ℹ️ ขั้นตอนการสมัครสอบ</h3>
+    <p><b>ขั้นตอนที่ 1</b> ชำระค่าธรรมเนียมการสมัครสอบ 500 บาท ผ่านแอปพลิเคชันของทุกธนาคาร
+      เข้าเมนู "สแกนจ่าย" สแกน QR Code Payment ที่โรงเรียนกำหนด (ช่องทางเดียวเท่านั้น)
+      ระบบจะแสดงข้อมูลให้อัตโนมัติ (Ref.1 / Ref.2 : 2569 จำนวน 500 บาท) แล้วบันทึกภาพหลักฐานไว้</p>
+    <p style="margin-top:10px"><b>ขั้นตอนที่ 2</b> กรอกใบสมัครในระบบนี้ให้ครบถ้วนตามความจริง
+      พร้อมอัปโหลดหลักฐานการชำระเงิน (ผู้สมัคร ม.4 แนบ ปพ.1 : บ และใบรับรองความประพฤติเป็น PDF ไฟล์เดียว)</p>
+    <p style="margin-top:10px"><b>ขั้นตอนที่ 3</b> เจ้าหน้าที่ตรวจสอบข้อมูลและคุณสมบัติ
+      และแจ้งสถานะการสมัครสอบภายใน 3 วันทำการ กรณีกรอกข้อมูลผิดหรือไม่พบข้อมูล
+      ติดต่อ ID LINE : psuwitsurat ภายในวันที่ 5 มกราคม 2569 เท่านั้น</p>
+  </div>
+
+  <div class="card">
+    <h3>📅 ปฏิทินดำเนินงาน</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:.9rem">
+      <tbody id="calBody"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>💰 ค่าธรรมเนียมและจำนวนที่รับ</h3>
+    <p>ค่าธรรมเนียมการสมัครสอบ <b>500 บาท</b> · ค่าธรรมเนียมการศึกษา 50,000 บาท/ปี (ภาคเรียนละ 25,000 บาท)</p>
+    <p style="margin-top:8px">จำนวนที่รับ: <b>ม.1 จำนวน 240 คน</b> (6 ห้องเรียน) · <b>ม.4 จำนวน 50 คน</b> (3 ห้องเรียน)
+      แบ่งเป็นกลุ่มบุคคลทั่วไป 80% · กลุ่มบุตร น้อง หลาน บุคลากร/ศิษย์เก่า ม.อ. 10% · กลุ่มผู้มีอุปการคุณ 10%</p>
+  </div>
+
+  <div class="card">
+    <h3>📞 ติดต่อสอบถาม</h3>
+    <p>งานรับนักเรียนใหม่ ฝ่ายนโยบายและบริหารการศึกษา<br>
+      ☎️ 08 4557 9229 กด 5 (จันทร์–ศุกร์ 08.30–16.30 น.)<br>
+      🆔 LINE ID : psuwitsurat &nbsp;·&nbsp; 📩 pws-newgen@psuwitsurat.ac.th<br>
+      🌐 <a href="https://sites.google.com/psuwitsurat.ac.th/pws-newgen" target="_blank" rel="noopener">
+        เว็บไซต์งานรับนักเรียนใหม่ รร.มอ.ว.สฎ.</a></p>
+  </div>
+</section>
+
+<!-- ═══════════════ ผลลัพธ์ + ใบสมัคร PDF ═══════════════ -->
+<section id="view-done" class="view">
+  <div class="card no-print" id="doneHead">
+    <h3>✅ ส่งใบสมัครเรียบร้อยแล้ว</h3>
+    <p id="doneText"></p>
+    <div class="note">
+      <b>เก็บใบสมัครนี้ไว้เป็นหลักฐาน</b> — เจ้าหน้าที่จะตรวจสอบข้อมูลและแจ้งสถานะภายใน 3 วันทำการ
+      ประกาศรายชื่อผู้มีสิทธิ์สอบและพิมพ์บัตรประจำตัวผู้เข้าสอบ วันที่ 15 มกราคม 2569 เวลา 14.00 น. เป็นต้นไป
+    </div>
+    <div class="btn-row">
+      <button class="btn green" id="btnPdf" onclick="downloadPDF()">⬇️ ดาวน์โหลดใบสมัคร (PDF)</button>
+      <button class="btn secondary" onclick="window.print()">🖨️ พิมพ์ใบสมัคร</button>
+      <button class="btn secondary" onclick="go('form')">กลับหน้าแรก</button>
+    </div>
+  </div>
+
+  <div id="slipWrap" class="card" style="padding:0">
+    <div class="slip-scroll"><div id="appSlip"></div></div>
+  </div>
+</section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="config.js"></script>
+<script>
+const CFG     = window.PWS_CONFIG || {};
+const API_URL = CFG.APPS_SCRIPT_URL;
+
+const EXAM_TYPES = [
+  { v:"สอบคัดเลือกเข้าศึกษาต่อ ชั้นมัธยมศึกษาปีที่ 1", code:"M1",
+    d:"สำหรับผู้สำเร็จหรือกำลังศึกษาชั้น ป.6 ปีการศึกษา 2568 · รับ 240 คน" },
+  { v:"สอบคัดเลือกเข้าศึกษาต่อ ชั้นมัธยมศึกษาปีที่ 4", code:"M4",
+    d:"สำหรับผู้สำเร็จหรือกำลังศึกษาชั้น ม.3 ปีการศึกษา 2568 · GPAX ม.1–2 ไม่ต่ำกว่า 2.50 · รับ 50 คน" },
+  { v:"สอบวัดความรู้ (Pre-Test) ช่วงชั้นประถมศึกษาตอนปลาย (ป.4 - 6)", code:"PP",
+    d:"ทดสอบศักยภาพและประเมินความพร้อม ประกาศคะแนนและลำดับที่ทุกรายวิชา" },
+  { v:"สอบวัดความรู้ (Pre-Test) ช่วงชั้นมัธยมศึกษาตอนต้น (ม.1 - 3)", code:"PM",
+    d:"ทดสอบศักยภาพและประเมินความพร้อม ประกาศคะแนนและลำดับที่ทุกรายวิชา" }
+];
+
+const GROUPS = [
+  { v:"บุคคลทั่วไป", d:"ผู้ที่ไม่ได้ใช้สิทธิ์กลุ่มบุตร น้อง หลาน บุคลากร/ศิษย์เก่า ม.อ. และกลุ่มผู้มีอุปการคุณ (80%)" },
+  { v:"บุตร น้อง หลาน บุคลากร / ศิษย์เก่ามหาวิทยาลัยสงขลานครินทร์",
+    d:"ต้องเป็นเครือญาติสายตรงเท่านั้น และส่งเอกสารพิจารณาสิทธิ์ทางอีเมลภายใน 5 ม.ค. 2569 (10%)" },
+  { v:"ผู้มีอุปการคุณ", d:"มอบทุนการศึกษาแก่มูลนิธิฯ อย่างน้อย 2 ทุน (ทุนละ 50,000 บาท) (10%)" }
+];
+
+const GRADES = {
+  M1: ["ป.6"], M4: ["ม.3"],
+  PP: ["ป.4", "ป.5", "ป.6"], PM: ["ม.1", "ม.2", "ม.3"]
+};
+
+const CALENDAR = [
+  ["3 พ.ย. 2568 – 5 ม.ค. 2569", "รับสมัครสอบคัดเลือกเข้าศึกษาต่อและสอบวัดความรู้"],
+  ["15 ม.ค. 2569 เวลา 14.00 น.", "ประกาศรายชื่อผู้มีสิทธิ์สอบ เลขที่นั่ง ห้องสอบ และพิมพ์บัตรประจำตัวผู้เข้าสอบ"],
+  ["25 ม.ค. 2569 เวลา 07.30–12.00 น.", "สอบคัดเลือกรอบแรก (ข้อเขียน) และสอบวัดความรู้ ณ อาคารศูนย์การเรียนรู้ ม.อ. สุราษฎร์ธานี"],
+  ["3 ก.พ. 2569 เวลา 14.00 น.", "ประกาศผลสอบรอบแรก \"ผ่าน\" หรือ \"ไม่ผ่าน\" และผลสอบวัดความรู้"],
+  ["3–5 ก.พ. 2569", "ผู้ผ่านรอบแรกแสดงความจำนงเข้ารับการสอบรอบสอง"],
+  ["11 ก.พ. 2569 เวลา 14.00 น.", "ประกาศรายชื่อผู้มีสิทธิ์สอบคัดเลือกรอบสอง"],
+  ["15 ก.พ. 2569 เวลา 08.30–16.30 น.", "สอบสัมภาษณ์นักเรียนพร้อมผู้ปกครอง ณ โรงเรียน มอ. วิทยานุสรณ์ สุราษฎร์ธานี"],
+  ["19 ก.พ. 2569 เวลา 14.00 น.", "ประกาศรายชื่อ \"ผู้ผ่านเกณฑ์มาตรฐาน\" การคัดเลือกเข้าศึกษาต่อ"],
+  ["19–24 ก.พ. 2569", "ยืนยันสิทธิ์เข้าศึกษาต่อและชำระค่าธรรมเนียมแรกเข้า"],
+  ["5 มี.ค. 2569", "ประกาศรายชื่อผู้ยืนยันสิทธิ์เข้าศึกษาต่อ"],
+  ["15 มี.ค. 2569 เวลา 08.30–12.00 น.", "มอบตัว ปฐมนิเทศ และพิธีมอบเกียรติบัตรสอบวัดความรู้"],
+  ["5–15 พ.ค. 2569", "เรียนปรับพื้นฐานนักเรียนใหม่ ม.1 และ ม.4"],
+  ["18 พ.ค. 2569", "เปิดภาคเรียนที่ 1 ปีการศึกษา 2569"]
+];
+
+const FIELDS = ["examType","applyGroup","relationType","psuPersonName","psuPersonType","psuPersonPhone",
+  "prefix","firstName","lastName","nickname","citizenId","birthDate","gender","religion","nationality",
+  "currentGrade","school","schoolProvince","gpax","addressNo","moo","road","subdistrict","district",
+  "province","zipcode","studentPhone","studentEmail","lineId","fatherName","fatherPhone","fatherJob",
+  "motherName","motherPhone","motherJob","guardianName","guardianRelation","guardianPhone",
+  "dormInterest","knownFrom","specialNeeds"];
+
+let selType = "", selGroup = "", editMode = false;
+
+// ─── helpers ────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+async function api(action, payload) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action, payload: payload || {} })
+  });
+  return res.json();
+}
+
+function go(v) {
+  document.querySelectorAll(".view").forEach(el => el.classList.remove("active"));
+  $("view-" + v).classList.add("active");
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.v === v));
+  window.scrollTo(0, 0);
+}
+
+function showMsg(id, text, ok) {
+  const el = $(id);
+  el.textContent = text;
+  el.className = "msg " + (ok ? "ok" : "err");
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function typeCode() {
+  const t = EXAM_TYPES.find(x => x.v === selType);
+  return t ? t.code : "";
+}
+
+// ─── สร้างตัวเลือกประเภท/กลุ่ม ───────────────────────────────────────────────
+function buildOptions() {
+  $("examTypeBox").innerHTML = EXAM_TYPES.map((t, i) => `
+    <label class="radio-card" data-t="${i}">
+      <input type="radio" name="examType" value="${esc(t.v)}">
+      <b>${esc(t.v)}</b><div class="d">${esc(t.d)}</div></label>`).join("");
+
+  $("groupBox").innerHTML = GROUPS.map(g => `
+    <label class="radio-card">
+      <input type="radio" name="applyGroup" value="${esc(g.v)}">
+      <b>${esc(g.v)}</b><div class="d">${esc(g.d)}</div></label>`).join("");
+
+  document.querySelectorAll('input[name=examType]').forEach(r =>
+    r.addEventListener("change", () => { selType = r.value; onTypeChange(); }));
+  document.querySelectorAll('input[name=applyGroup]').forEach(r =>
+    r.addEventListener("change", () => { selGroup = r.value; onGroupChange(); }));
+
+  $("calBody").innerHTML = CALENDAR.map(c =>
+    `<tr><td style="padding:7px 8px;border-bottom:1px solid #eef2f7;white-space:nowrap;color:#1a4f8b;font-weight:600">
+      ${esc(c[0])}</td><td style="padding:7px 8px;border-bottom:1px solid #eef2f7">${esc(c[1])}</td></tr>`).join("");
+}
+
+function markSelected(name) {
+  document.querySelectorAll(`input[name=${name}]`).forEach(r =>
+    r.closest(".radio-card").classList.toggle("sel", r.checked));
+}
+
+function onTypeChange() {
+  markSelected("examType");
+  const c = typeCode();
+  const isEntrance = c === "M1" || c === "M4";
+
+  $("groupCard").classList.toggle("hidden", !isEntrance);
+  if (!isEntrance) { selGroup = ""; document.querySelectorAll('input[name=applyGroup]').forEach(r => r.checked = false); onGroupChange(); }
+
+  // ระดับชั้นปัจจุบันตามประเภทที่เลือก
+  const sel = $("f_currentGrade");
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— เลือก —</option>' +
+    (GRADES[c] || []).map(g => `<option>${g}</option>`).join("");
+  if ((GRADES[c] || []).includes(cur)) sel.value = cur;
+
+  // GPAX บังคับเฉพาะ ม.4
+  const isM4 = c === "M4";
+  $("gpaxReq").classList.toggle("hidden", !isM4);
+  $("gpaxHint").textContent = isM4
+    ? "ผู้สมัคร ม.4 ต้องมี GPAX ชั้น ม.1 และ ม.2 (4 ภาคเรียน) ไม่ต่ำกว่า 2.50"
+    : "ผลการเรียนเฉลี่ยสะสมล่าสุด (ไม่บังคับ)";
+  $("docsField").classList.toggle("hidden", !isM4);
+}
+
+function onGroupChange() {
+  markSelected("applyGroup");
+  $("psuBox").classList.toggle("hidden", selGroup.indexOf("บุตร") !== 0);
+  $("donorBox").classList.toggle("hidden", selGroup !== "ผู้มีอุปการคุณ");
+}
+
+// การติ๊กปล่อยให้ <label> จัดการเอง — ที่นี่แค่ซิงก์สีกรอบตามสถานะจริง
+function syncConsent() {
+  $("consentCard").classList.toggle("sel", $("f_consent").checked);
+}
+
+// ─── ตรวจเลขบัตรประชาชนไทย ──────────────────────────────────────────────────
+function validThaiId(id) {
+  id = String(id).replace(/\D/g, "");
+  if (id.length !== 13) return false;
+  let sum = 0;
+  for (let i = 0; i < 12; i++) sum += parseInt(id[i]) * (13 - i);
+  return (11 - (sum % 11)) % 10 === parseInt(id[12]);
+}
+
+// ─── อัปโหลดไฟล์แนบขึ้น Cloudinary แล้วคืน URL ──────────────────────────────
+const MAX_FILE = 8 * 1024 * 1024;
+
+async function uploadToCloudinary(input, tag) {
+  const f = input.files && input.files[0];
+  if (!f) return "";
+  if (f.size > MAX_FILE) {
+    throw new Error(`ไฟล์ "${f.name}" มีขนาด ${(f.size / 1048576).toFixed(1)} MB เกิน 8 MB`);
+  }
+  if (!CFG.CLOUDINARY_CLOUD || CFG.CLOUDINARY_CLOUD.indexOf("PUT_YOUR") === 0) {
+    throw new Error("ยังไม่ได้ตั้งค่า Cloudinary ในไฟล์ config.js");
+  }
+
+  const fd = new FormData();
+  fd.append("file", f);
+  fd.append("upload_preset", CFG.CLOUDINARY_PRESET);
+  fd.append("folder", (CFG.CLOUDINARY_FOLDER || "pws-admission") + "/" + tag);
+
+  // ใช้ /auto/upload เพื่อรองรับทั้งรูปภาพและ PDF
+  const res = await fetch(
+    "https://api.cloudinary.com/v1_1/" + CFG.CLOUDINARY_CLOUD + "/auto/upload",
+    { method: "POST", body: fd });
+  const data = await res.json();
+
+  if (!res.ok || !data.secure_url) {
+    throw new Error("อัปโหลดไฟล์ไม่สำเร็จ: " + ((data.error && data.error.message) || "ไม่ทราบสาเหตุ"));
+  }
+  return data.secure_url;
+}
+
+function collect() {
+  const p = {};
+  FIELDS.forEach(f => {
+    const el = $("f_" + f);
+    if (el) p[f] = el.value.trim();
+  });
+  p.examType   = selType;
+  p.applyGroup = selGroup;
+  p.citizenId  = (p.citizenId || "").replace(/\D/g, "");
+  return p;
+}
+
+// ─── ส่งใบสมัคร ─────────────────────────────────────────────────────────────
+async function submitForm() {
+  const p = collect();
+
+  if (!p.examType)  return showMsg("formMsg", "กรุณาเลือกประเภทการสมัคร (ข้อ 1)", false);
+  const c = typeCode();
+  if ((c === "M1" || c === "M4") && !p.applyGroup)
+    return showMsg("formMsg", "กรุณาเลือกกลุ่มการรับสมัคร (ข้อ 2)", false);
+  if (!validThaiId(p.citizenId))
+    return showMsg("formMsg", "เลขประจำตัวประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง", false);
+  if (!$("f_consent").checked)
+    return showMsg("formMsg", "กรุณาติ๊กยืนยันการรับรองความถูกต้องของข้อมูล (ข้อ 9)", false);
+  p.consent = true;
+
+  const btn = $("btnSubmit");
+  btn.disabled = true;
+
+  try {
+    if (!editMode && !$("f_slipFile").files[0])
+      throw new Error("กรุณาแนบภาพหลักฐานการชำระค่าธรรมเนียมการสมัครสอบ 500 บาท (ข้อ 8)");
+    if (!editMode && c === "M4" && !$("f_docsFile").files[0])
+      throw new Error("ผู้สมัคร ม.4 ต้องแนบไฟล์ PDF ปพ.1 : บ และใบรับรองความประพฤติ (ข้อ 8)");
+
+    btn.textContent = "กำลังอัปโหลดไฟล์แนบ…";
+    p.slipUrl = await uploadToCloudinary($("f_slipFile"), "slips");
+    p.docsUrl = await uploadToCloudinary($("f_docsFile"), "docs");
+
+    btn.textContent = "กำลังบันทึกใบสมัคร…";
+
+    const r = await api(editMode ? "updateExam" : "submitExam", p);
+    if (r.status !== "SUCCESS") throw new Error(r.msg);
+
+    renderSlip(r.application);
+    $("doneText").textContent = r.msg;
+    $("doneHead").querySelector("h3").textContent =
+      editMode ? "✅ แก้ไขใบสมัครเรียบร้อยแล้ว" : "✅ ส่งใบสมัครเรียบร้อยแล้ว";
+    // ส่งสำเร็จแล้ว — การกดบันทึกครั้งถัดไปคือการ "แก้ไข" ไม่ใช่สมัครใหม่
+    if (!editMode) fillForm(r.application);
+    go("done");
+  } catch (e) {
+    showMsg("formMsg", e.message || "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง", false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = editMode ? "💾 บันทึกการแก้ไข" : "📨 ส่งใบสมัคร";
+  }
+}
+
+// ─── สืบค้น / แก้ไข ─────────────────────────────────────────────────────────
+async function doLookup() {
+  const cid = $("lk_cid").value.replace(/\D/g, "");
+  const dob = $("lk_dob").value;
+  if (!validThaiId(cid)) return showMsg("lookupMsg", "เลขประจำตัวประชาชนไม่ถูกต้อง", false);
+  if (!dob) return showMsg("lookupMsg", "กรุณาระบุวันเกิด", false);
+
+  const r = await api("lookupExam", { citizenId: cid, birthDate: dob });
+  if (r.status !== "SUCCESS") return showMsg("lookupMsg", r.msg, false);
+
+  fillForm(r.application);
+  renderSlip(r.application);
+  $("doneText").textContent = "เลขที่ใบสมัคร " + r.application.appNo +
+    " · สถานะ: " + (r.application.status || "รอตรวจสอบ");
+  $("doneHead").querySelector("h3").textContent = "📄 ใบสมัครของคุณ";
+  go("done");
+}
+
+function fillForm(a) {
+  editMode = true;
+  selType = a.examType; selGroup = a.applyGroup;
+  document.querySelectorAll('input[name=examType]').forEach(r => r.checked = (r.value === selType));
+  onTypeChange();
+  document.querySelectorAll('input[name=applyGroup]').forEach(r => r.checked = (r.value === selGroup));
+  onGroupChange();
+  FIELDS.forEach(f => { const el = $("f_" + f); if (el && f !== "examType" && f !== "applyGroup") el.value = a[f] || ""; });
+  $("f_currentGrade").value = a.currentGrade || "";
+  $("f_consent").checked = true; syncConsent();
+  $("btnSubmit").textContent = "💾 บันทึกการแก้ไข";
+  $("f_citizenId").readOnly = true;
+  $("f_birthDate").readOnly = true;
+  $("f_slipFile").parentElement.querySelector(".hint").textContent =
+    "แนบใหม่เฉพาะกรณีต้องการเปลี่ยนไฟล์เดิม (ไม่บังคับ)";
+}
+
+// ─── ใบสมัคร A4 ─────────────────────────────────────────────────────────────
+let lastApp = null;
+
+function row(k, v) {
+  return `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v || "-")}</td></tr>`;
+}
+
+function renderSlip(a) {
+  lastApp = a;
+  const addr = [
+    a.addressNo && ("บ้านเลขที่ " + a.addressNo), a.moo && ("หมู่ " + a.moo), a.road && ("ถ." + a.road),
+    a.subdistrict && ("ต." + a.subdistrict), a.district && ("อ." + a.district),
+    a.province && ("จ." + a.province), a.zipcode
+  ].filter(Boolean).join(" ");
+
+  const isEntrance = a.examType.indexOf("สอบคัดเลือก") === 0;
+  const isM4 = a.examType.indexOf("ปีที่ 4") > -1;
+
+  $("appSlip").innerHTML = `
+    <div class="noBox"><span>เลขที่ใบสมัคร</span><b>${esc(a.appNo)}</b></div>
+    <div class="sHead">
+      <div class="school">โรงเรียน มอ. วิทยานุสรณ์ สุราษฎร์ธานี</div>
+      <div class="title">ใบสมัครสอบคัดเลือกนักเรียน ปีการศึกษา 2569</div>
+      <div class="year">${esc(a.examType)}</div>
+    </div>
+
+    <h4>ข้อมูลการสมัคร</h4>
+    <table>
+      ${row("ประเภทการสมัคร", a.examType)}
+      ${isEntrance ? row("กลุ่มการรับสมัคร", a.applyGroup) : ""}
+      ${a.relationType ? row("ใช้สิทธิ์ในฐานะ", a.relationType + " ของ " + a.psuPersonName +
+        (a.psuPersonType ? " (" + a.psuPersonType + ")" : "")) : ""}
+      ${row("วันที่สมัคร", a.createdAt)}
+      ${row("สถานะการสมัคร", a.status || "รอตรวจสอบ")}
+    </table>
+
+    <h4>ข้อมูลนักเรียนผู้สมัคร</h4>
+    <table>
+      ${row("ชื่อ - สกุล", a.prefix + a.firstName + "  " + a.lastName + (a.nickname ? "  (" + a.nickname + ")" : ""))}
+      ${row("เลขประจำตัวประชาชน", a.citizenId)}
+      ${row("วันเกิด", a.birthDate)}
+      ${row("เพศ / ศาสนา / สัญชาติ", [a.gender, a.religion, a.nationality].filter(Boolean).join(" · "))}
+      ${row("ที่อยู่", addr)}
+      ${row("เบอร์โทรนักเรียน", a.studentPhone)}
+      ${row("อีเมล / LINE ID", [a.studentEmail, a.lineId].filter(Boolean).join(" · "))}
+    </table>
+
+    <h4>ข้อมูลการศึกษา</h4>
+    <table>
+      ${row("ระดับชั้นปัจจุบัน (ปีการศึกษา 2568)", a.currentGrade)}
+      ${row("โรงเรียนปัจจุบัน", a.school + (a.schoolProvince ? "  จ." + a.schoolProvince : ""))}
+      ${row("ผลการเรียนเฉลี่ยสะสม (GPAX)", a.gpax)}
+    </table>
+
+    <h4>ข้อมูลบิดา มารดา และผู้ปกครอง</h4>
+    <table>
+      ${row("บิดา", [a.fatherName, a.fatherJob, a.fatherPhone].filter(Boolean).join(" · "))}
+      ${row("มารดา", [a.motherName, a.motherJob, a.motherPhone].filter(Boolean).join(" · "))}
+      ${row("ผู้ปกครอง", a.guardianName + (a.guardianRelation ? " (" + a.guardianRelation + ")" : "") +
+        (a.guardianPhone ? " · " + a.guardianPhone : ""))}
+    </table>
+
+    <h4>ข้อมูลเพิ่มเติมและเอกสารแนบ</h4>
+    <table>
+      ${row("ความสนใจหอพักนักเรียน", a.dormInterest)}
+      ${row("ข้อมูลสุขภาพ / ความต้องการพิเศษ", a.specialNeeds)}
+      ${row("หลักฐานการชำระเงิน 500 บาท", a.slipUrl ? "อัปโหลดแล้ว ✓" : "ยังไม่ได้อัปโหลด")}
+      ${isM4 ? row("ปพ.1 : บ และใบรับรองความประพฤติ", a.docsUrl ? "อัปโหลดแล้ว ✓" : "ยังไม่ได้อัปโหลด") : ""}
+    </table>
+
+    <div class="foot">
+      <b>กำหนดการสำคัญ</b><br>
+      • ประกาศรายชื่อผู้มีสิทธิ์สอบ เลขที่นั่งสอบ ห้องสอบ และพิมพ์บัตรประจำตัวผู้เข้าสอบ :
+        วันพุธที่ 15 มกราคม 2569 เวลา 14.00 น. เป็นต้นไป<br>
+      • วันสอบ : วันอาทิตย์ที่ 25 มกราคม 2569 เวลา 07.30 – 12.00 น.
+        ณ อาคารศูนย์การเรียนรู้ มหาวิทยาลัยสงขลานครินทร์ วิทยาเขตสุราษฎร์ธานี<br>
+      • สืบค้นรายชื่อและผลสอบรายบุคคลด้วยเลขประจำตัวประชาชน ที่เว็บไซต์งานรับนักเรียนใหม่ รร.มอ.ว.สฎ.<br>
+      • สอบถาม : 08 4557 9229 กด 5 · LINE ID : psuwitsurat · pws-newgen@psuwitsurat.ac.th<br>
+      <i>ใบสมัครนี้ออกโดยระบบรับสมัครออนไลน์ เมื่อ ${esc(a.updatedAt || a.createdAt)}</i>
+    </div>
+
+    <div class="sign">
+      <div class="line"></div><br>
+      ( ${esc(a.prefix + a.firstName + " " + a.lastName)} )<br>
+      ผู้สมัครสอบ
+    </div>`;
+}
+
+// ─── ดาวน์โหลด PDF ──────────────────────────────────────────────────────────
+function downloadPDF() {
+  const el = $("appSlip");
+  const name = "ใบสมัคร_" + (lastApp ? lastApp.appNo + "_" + lastApp.firstName : "2569") + ".pdf";
+
+  if (typeof html2pdf === "undefined") {
+    alert("ไม่สามารถโหลดตัวสร้าง PDF ได้ ระบบจะเปิดหน้าต่างพิมพ์แทน\n(เลือกปลายทางเป็น \"บันทึกเป็น PDF\")");
+    return window.print();
+  }
+  const btn = $("btnPdf");
+  btn.disabled = true; btn.textContent = "กำลังสร้าง PDF…";
+  html2pdf().set({
+    margin: [8, 6, 8, 6],
+    filename: name,
+    image: { type: "jpeg", quality: 0.96 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+  }).from(el).save().then(() => {
+    btn.disabled = false; btn.textContent = "⬇️ ดาวน์โหลดใบสมัคร (PDF)";
+  }).catch(() => {
+    btn.disabled = false; btn.textContent = "⬇️ ดาวน์โหลดใบสมัคร (PDF)";
+    alert("สร้าง PDF ไม่สำเร็จ ระบบจะเปิดหน้าต่างพิมพ์แทน");
+    window.print();
+  });
+}
+
+// ─── init ───────────────────────────────────────────────────────────────────
+buildOptions();
+$("f_citizenId").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, ""); });
+$("lk_cid").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, ""); });
+</script>
+</body>
+</html>
