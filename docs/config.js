@@ -17,7 +17,7 @@ window.PWS_CONFIG = {
   // ── ไฟล์แนบ (สลิป / ปพ.1) → Cloudinary ──────────────────────────────────
   // สร้าง unsigned upload preset ที่ Settings → Upload → Upload presets
   // (Signing Mode = Unsigned) แล้วนำชื่อ preset กับ cloud name มาวางที่นี่
-  CLOUDINARY_CLOUD:  "PUT_YOUR_CLOUDINARY_CLOUD_NAME",
-  CLOUDINARY_PRESET: "PUT_YOUR_UNSIGNED_UPLOAD_PRESET",
+  CLOUDINARY_CLOUD:  "syyyhyjc",
+  CLOUDINARY_PRESET: "pws_admission",
   CLOUDINARY_FOLDER: "pws-admission-2569",
 };
