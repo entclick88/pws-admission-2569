@@ -10,7 +10,7 @@ window.PWS_CONFIG = {
 
   // ── ข้อมูลการประกาศ → Cloudflare Worker + D1 ────────────────────────────
   // ได้จากคำสั่ง `npx wrangler deploy` เช่น https://pws-admission-api.<ชื่อ>.workers.dev
-  WORKER_URL: "PUT_YOUR_WORKER_URL_HERE",
+  WORKER_URL: "https://pws-admission-api.entclick88.workers.dev",
 
   // ── เข้าสู่ระบบผู้ดูแลด้วย Google (หน้า admin.html) ──────────────────────
   // OAuth 2.0 Client ID (ประเภท Web application) จาก Google Cloud Console
