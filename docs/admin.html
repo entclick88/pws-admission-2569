@@ -15,6 +15,9 @@
   header{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;padding:18px 16px}
   header .wrap{max-width:1080px;margin:0 auto;display:flex;justify-content:space-between;
                align-items:center;gap:12px;flex-wrap:wrap}
+  header .brand{display:flex;align-items:center;gap:12px}
+  header .logo{width:52px;height:52px;border-radius:50%;background:#fff;padding:4px;object-fit:contain;
+               flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.2)}
   header h1{font-size:1.15rem}
   header .sub{font-size:.83rem;opacity:.85}
 
@@ -80,9 +83,12 @@
 
 <header>
   <div class="wrap">
-    <div>
-      <h1>⚙️ ผู้ดูแลระบบ — งานรับนักเรียนใหม่ 2569</h1>
-      <div class="sub">จัดการประกาศ · FAQ · นำเข้ารายชื่อและผลสอบ · ดาวน์โหลดใบสมัคร</div>
+    <div class="brand">
+      <img class="logo" src="logo.png" alt="ตราโรงเรียน มอ. วิทยานุสรณ์ สุราษฎร์ธานี">
+      <div>
+        <h1>⚙️ ผู้ดูแลระบบ — งานรับนักเรียนใหม่ 2569</h1>
+        <div class="sub">จัดการประกาศ · FAQ · นำเข้ารายชื่อและผลสอบ · ดาวน์โหลดใบสมัคร</div>
+      </div>
     </div>
     <button class="btn secondary hidden" id="btnLogout" onclick="logout()">ออกจากระบบ</button>
   </div>
