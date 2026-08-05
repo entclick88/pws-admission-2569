@@ -18,13 +18,68 @@ const json = (data, status = 200) =>
 
 const err = (message, status = 400) => json({ error: message }, status);
 
-// ── ตรวจสิทธิ์ admin ด้วย ADMIN_KEY (ตั้งด้วย: wrangler secret put ADMIN_KEY) ──
-function requireAdmin(req, env) {
+// ── ตรวจสิทธิ์ admin ด้วย session token (ออกให้หลัง Google login) ─────────────
+async function getSession(req, env) {
   const auth = req.headers.get('Authorization') || '';
-  const key = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) {
-    throw { status: 401, message: 'ต้องเข้าสู่ระบบผู้ดูแลก่อนใช้งาน' };
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!token) return null;
+  return env.DB.prepare(
+    `SELECT s.token, u.id, u.email, u.name, u.picture, u.role
+       FROM sessions s JOIN users u ON u.id = s.user_id
+      WHERE s.token = ? AND s.expires_at > datetime('now')`
+  ).bind(token).first();
+}
+
+function needAdmin(user) {
+  if (!user) throw { status: 401, message: 'ต้องเข้าสู่ระบบผู้ดูแลก่อนใช้งาน' };
+}
+
+// ── ยืนยัน Google ID token แล้วออก session (จำกัดโดเมน/อีเมลที่กำหนด) ──────────
+async function handleGoogleLogin(req, env) {
+  const { credential, remember } = await req.json().catch(() => ({}));
+  if (!credential) return err('ไม่พบข้อมูลการเข้าสู่ระบบจาก Google');
+  if (!env.GOOGLE_CLIENT_ID) return err('ยังไม่ได้ตั้งค่า GOOGLE_CLIENT_ID', 500);
+
+  const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(credential));
+  if (!r.ok) return err('ตรวจสอบบัญชี Google ไม่สำเร็จ', 401);
+  const info = await r.json();
+
+  if (info.aud !== env.GOOGLE_CLIENT_ID) return err('บัญชีนี้ไม่ได้มาจากแอปพลิเคชันที่ถูกต้อง', 401);
+  if (info.email_verified !== 'true' && info.email_verified !== true) {
+    return err('อีเมล Google นี้ยังไม่ได้รับการยืนยัน', 401);
   }
+
+  const email = String(info.email || '').toLowerCase();
+  const adminEmails = (env.ADMIN_EMAILS || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+  const domains = (env.ALLOWED_DOMAINS || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+  const isListedAdmin = adminEmails.includes(email);
+  const domainOk = domains.length > 0 && domains.includes(email.split('@')[1]);
+
+  if (!isListedAdmin && !domainOk) {
+    return err('อีเมล ' + email + ' ไม่มีสิทธิ์เข้าใช้งานระบบผู้ดูแล กรุณาติดต่อผู้ดูแลระบบ', 403);
+  }
+
+  let user = await env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
+  if (!user) {
+    await env.DB.prepare('INSERT INTO users (email, name, picture, role) VALUES (?,?,?,?)')
+      .bind(email, info.name || email, info.picture || '', 'admin').run();
+    user = await env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
+  } else {
+    await env.DB.prepare('UPDATE users SET name=?, picture=? WHERE id=?')
+      .bind(info.name || user.name, info.picture || user.picture, user.id).run();
+  }
+
+  // จำ session 30 วันถ้าเลือก "จดจำการเข้าสู่ระบบ" ไม่งั้น 12 ชั่วโมง
+  const ttl = remember ? '+30 days' : '+12 hours';
+  const token = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
+  await env.DB.prepare(
+    "INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, datetime('now', ?))"
+  ).bind(token, user.id, ttl).run();
+
+  // ลบ session ที่หมดอายุทิ้งเป็นระยะ
+  await env.DB.prepare("DELETE FROM sessions WHERE expires_at <= datetime('now')").run();
+
+  return json({ token, user: { email, name: info.name || email, picture: info.picture || '' } });
 }
 
 const digits = v => String(v == null ? '' : v).replace(/\D/g, '');
@@ -74,6 +129,9 @@ export default {
       if (path === '/' || path === '/api/health') {
         return json({ ok: true, service: 'pws-admission-api' });
       }
+
+      // ผู้ใช้ปัจจุบัน (null ถ้ายังไม่ได้เข้าสู่ระบบ) — ใช้กับทุก endpoint /api/admin/*
+      const user = await getSession(req, env);
 
       // ══════════════ PUBLIC ══════════════
 
@@ -152,15 +210,42 @@ export default {
 
       // ══════════════ ADMIN ══════════════
 
+      // เข้าสู่ระบบด้วย Google
       if (path === '/api/admin/login' && m === 'POST') {
-        const { key } = await req.json();
-        if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) return err('รหัสผู้ดูแลไม่ถูกต้อง', 401);
+        return handleGoogleLogin(req, env);
+      }
+
+      // ตรวจ session เดิม (ใช้ตอนเปิดหน้า admin ว่ายัง login อยู่ไหม)
+      if (path === '/api/admin/me' && m === 'GET') {
+        needAdmin(user);
+        return json({ user: { email: user.email, name: user.name, picture: user.picture } });
+      }
+
+      // ออกจากระบบ — เพิกถอน session ปัจจุบัน
+      if (path === '/api/admin/logout' && m === 'POST') {
+        if (user) await env.DB.prepare('DELETE FROM sessions WHERE token = ?').bind(user.token).run();
         return json({ ok: true });
+      }
+
+      // ดึงใบสมัครจาก Google Sheet (Worker เป็นตัวกลาง ไม่เปิดรหัส Sheet ให้เบราว์เซอร์)
+      if (path === '/api/admin/applications' && m === 'GET') {
+        needAdmin(user);
+        if (!env.SHEET_API_URL || !env.SHEET_API_KEY) {
+          return err('ยังไม่ได้ตั้งค่า SHEET_API_URL / SHEET_API_KEY ใน Worker', 500);
+        }
+        const r = await fetch(env.SHEET_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'adminListExam', payload: { key: env.SHEET_API_KEY } }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (data.status !== 'SUCCESS') return err(data.msg || 'ดึงข้อมูลใบสมัครไม่สำเร็จ', 502);
+        return json({ list: data.list || [] });
       }
 
       // ---- ประกาศ ----
       if (path === '/api/admin/announcements') {
-        requireAdmin(req, env);
+        needAdmin(user);
         if (m === 'GET') {
           const { results } = await env.DB.prepare(
             'SELECT * FROM announcements ORDER BY sort_order, id'
@@ -179,7 +264,7 @@ export default {
       }
       let mt = path.match(/^\/api\/admin\/announcements\/(\d+)$/);
       if (mt) {
-        requireAdmin(req, env);
+        needAdmin(user);
         if (m === 'PUT') {
           const b = await req.json();
           await env.DB.prepare(
@@ -197,7 +282,7 @@ export default {
 
       // ---- FAQ ----
       if (path === '/api/admin/faqs') {
-        requireAdmin(req, env);
+        needAdmin(user);
         if (m === 'GET') {
           const { results } = await env.DB.prepare('SELECT * FROM faqs ORDER BY sort_order, id').all();
           return json(results);
@@ -213,7 +298,7 @@ export default {
       }
       mt = path.match(/^\/api\/admin\/faqs\/(\d+)$/);
       if (mt) {
-        requireAdmin(req, env);
+        needAdmin(user);
         if (m === 'PUT') {
           const b = await req.json();
           await env.DB.prepare(
@@ -231,7 +316,7 @@ export default {
       // ---- เปิด/ปิดการประกาศแต่ละรอบ ----
       mt = path.match(/^\/api\/admin\/stages\/([a-z0-9_]+)$/);
       if (mt && m === 'PUT') {
-        requireAdmin(req, env);
+        needAdmin(user);
         const b = await req.json();
         await env.DB.prepare(
           'UPDATE stages SET published=?, publish_note=? WHERE code=?'
@@ -241,7 +326,7 @@ export default {
 
       // ---- ข้อมูลรายบุคคลของแต่ละรอบ ----
       if (path === '/api/admin/records' && m === 'GET') {
-        requireAdmin(req, env);
+        needAdmin(user);
         const stage = url.searchParams.get('stage');
         const { results } = await env.DB.prepare(
           'SELECT * FROM records' + (stage ? ' WHERE stage = ?' : '') + ' ORDER BY app_no, id'
@@ -250,7 +335,7 @@ export default {
       }
 
       if (path === '/api/admin/records' && m === 'DELETE') {
-        requireAdmin(req, env);
+        needAdmin(user);
         const stage = url.searchParams.get('stage');
         if (!stage) return err('ต้องระบุ stage ที่จะลบ');
         const r = await env.DB.prepare('DELETE FROM records WHERE stage = ?').bind(stage).run();
@@ -260,7 +345,7 @@ export default {
       // นำเข้าข้อมูลจาก CSV ที่ admin วางในหน้าเว็บ
       // body: { stage, rows: [{citizen_id, app_no, full_name, ...}], replace: bool }
       if (path === '/api/admin/records/import' && m === 'POST') {
-        requireAdmin(req, env);
+        needAdmin(user);
         const b = await req.json();
         const stage = String(b.stage || '').trim();
         const rows = Array.isArray(b.rows) ? b.rows : [];

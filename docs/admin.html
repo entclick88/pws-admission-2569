@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ผู้ดูแลระบบ — งานรับนักเรียนใหม่ รร.มอ.ว.สฎ.</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async></script>
 <style>
   :root{--primary:#1a4f8b;--primary-dark:#123a68;--accent:#f5a623;--bg:#eef2f8;--card:#fff;
         --text:#23303f;--muted:#6b7a8c;--ok:#1d8a4e;--bad:#c0392b;--line:#dde5ee}
@@ -101,18 +102,24 @@
 
 <!-- ═══ เข้าสู่ระบบ ═══ -->
 <section id="view-login" class="view active">
-  <div class="card" style="max-width:430px;margin:40px auto">
-    <h3>🔐 เข้าสู่ระบบผู้ดูแล</h3>
+  <div class="card" style="max-width:440px;margin:40px auto;text-align:center">
+    <h3 style="justify-content:center">🔐 เข้าสู่ระบบผู้ดูแล</h3>
+    <p class="hint" style="margin-bottom:18px">
+      สำหรับเจ้าหน้าที่งานรับนักเรียนใหม่ เข้าสู่ระบบด้วยบัญชี Google
+      ของโรงเรียน (อีเมล <b>@psuwitsurat.ac.th</b>)</p>
     <div class="msg" id="loginMsg"></div>
-    <label>รหัสผู้ดูแล (ADMIN_KEY)</label>
-    <input id="adminKey" type="password" onkeydown="if(event.key==='Enter')login()">
-    <p class="hint" style="margin-top:6px">
-      รหัสเดียวกับที่ตั้งไว้ด้วย <code>wrangler secret put ADMIN_KEY</code></p>
-    <label>รหัสผู้ดูแลฝั่ง Google Sheet (ถ้าต่างกัน)</label>
-    <input id="sheetKey" type="password" placeholder="เว้นว่างถ้าใช้รหัสเดียวกัน">
-    <p class="hint" style="margin-top:6px">
-      ใช้เฉพาะตอนดาวน์โหลด CSV ใบสมัคร — ดูได้จากฟังก์ชัน <code>showAdminKey()</code> ใน Apps Script</p>
-    <div class="btn-row"><button class="btn" style="width:100%" onclick="login()">เข้าสู่ระบบ</button></div>
+
+    <div id="gsiButton" style="display:flex;justify-content:center;margin:8px 0 14px"></div>
+    <div id="gsiFallback" class="hint hidden" style="margin-bottom:12px"></div>
+
+    <label class="switch" style="justify-content:center">
+      <input type="checkbox" id="rememberMe" checked>
+      <span style="font-weight:400">จดจำการเข้าสู่ระบบไว้ 30 วัน (ในเครื่องนี้)</span>
+    </label>
+
+    <p class="hint" style="margin-top:18px">
+      หากขึ้นว่าไม่มีสิทธิ์ กรุณาให้ผู้ดูแลเพิ่มอีเมลของท่านใน <code>ADMIN_EMAILS</code>
+      หรือใช้บัญชีในโดเมนที่กำหนด</p>
   </div>
 </section>
 
@@ -239,8 +246,8 @@
 const CFG = window.PWS_CONFIG || {};
 const API = (CFG.WORKER_URL || "").replace(/\/+$/, "");
 
-let KEY = sessionStorage.getItem("pwsAdminKey") || "";
-let SHEET_KEY = sessionStorage.getItem("pwsSheetKey") || "";
+// session token เก็บใน localStorage (จำ 30 วัน) หรือ sessionStorage (แค่รอบนี้)
+let TOKEN = localStorage.getItem("pwsToken") || sessionStorage.getItem("pwsToken") || "";
 let stagesCache = [], appsData = [], parsedRows = [];
 
 const $ = id => document.getElementById(id);
@@ -248,20 +255,12 @@ const esc = s => String(s == null ? "" : s)
   .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
 async function api(path, options = {}) {
-  options.headers = Object.assign({ "Authorization": "Bearer " + KEY }, options.headers || {});
+  options.headers = Object.assign({ "Authorization": "Bearer " + TOKEN }, options.headers || {});
   const res = await fetch(API + path, options);
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { forceLogout(); throw new Error("เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่"); }
   if (!res.ok) throw new Error(data.error || "เชื่อมต่อระบบไม่สำเร็จ");
   return data;
-}
-
-async function sheetApi(action, payload) {
-  const res = await fetch(CFG.APPS_SCRIPT_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, payload: Object.assign({ key: SHEET_KEY || KEY }, payload || {}) })
-  });
-  return res.json();
 }
 
 function showMsg(id, text, ok) {
@@ -281,38 +280,66 @@ function go(v) {
   window.scrollTo(0, 0);
 }
 
-// ─── login ──────────────────────────────────────────────────────────────────
-async function login() {
-  const k = $("adminKey").value.trim();
-  if (!k) return showMsg("loginMsg", "กรุณากรอกรหัสผู้ดูแล", false);
+// ─── Google login ────────────────────────────────────────────────────────────
+// เรียกเมื่อ Google ส่ง credential (JWT) กลับมาหลังผู้ใช้เลือกบัญชี
+async function onGoogleCredential(response) {
+  const remember = $("rememberMe").checked;
   try {
     const res = await fetch(API + "/api/admin/login", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: k })
+      body: JSON.stringify({ credential: response.credential, remember })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "เข้าสู่ระบบไม่สำเร็จ");
 
-    KEY = k;
-    SHEET_KEY = $("sheetKey").value.trim();
-    sessionStorage.setItem("pwsAdminKey", KEY);
-    sessionStorage.setItem("pwsSheetKey", SHEET_KEY);
-    enterAdmin();
+    TOKEN = data.token;
+    // จำไว้ 30 วันใน localStorage หรือแค่รอบเบราว์เซอร์นี้ใน sessionStorage
+    (remember ? localStorage : sessionStorage).setItem("pwsToken", TOKEN);
+    (remember ? sessionStorage : localStorage).removeItem("pwsToken");
+    enterAdmin(data.user);
   } catch (e) {
     showMsg("loginMsg", e.message, false);
   }
 }
 
-function logout() {
-  KEY = ""; SHEET_KEY = "";
-  sessionStorage.removeItem("pwsAdminKey");
-  sessionStorage.removeItem("pwsSheetKey");
+function initGoogleSignIn() {
+  const cid = CFG.GOOGLE_CLIENT_ID || "";
+  if (!cid || cid.indexOf("PUT_YOUR") === 0) {
+    $("gsiFallback").classList.remove("hidden");
+    $("gsiFallback").innerHTML = "⚠️ ยังไม่ได้ตั้งค่า <code>GOOGLE_CLIENT_ID</code> ในไฟล์ config.js";
+    return;
+  }
+  if (typeof google === "undefined" || !google.accounts) {
+    $("gsiFallback").classList.remove("hidden");
+    $("gsiFallback").textContent = "โหลดระบบ Google Sign-In ไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต";
+    return;
+  }
+  google.accounts.id.initialize({ client_id: cid, callback: onGoogleCredential });
+  google.accounts.id.renderButton($("gsiButton"), {
+    theme: "filled_blue", size: "large", shape: "pill",
+    text: "signin_with", locale: "th", width: 280
+  });
+}
+
+async function forceLogout() {
+  TOKEN = "";
+  localStorage.removeItem("pwsToken");
+  sessionStorage.removeItem("pwsToken");
+}
+
+async function logout() {
+  try { if (TOKEN) await api("/api/admin/logout", { method: "POST" }); } catch (e) { /* เพิกถอนฝั่งเครื่องอยู่ดี */ }
+  forceLogout();
   location.reload();
 }
 
-async function enterAdmin() {
+async function enterAdmin(userInfo) {
+  $("view-login").classList.remove("active");
   $("mainNav").classList.remove("hidden");
   $("btnLogout").classList.remove("hidden");
+  if (userInfo && userInfo.name) {
+    $("btnLogout").textContent = "ออกจากระบบ (" + userInfo.name + ")";
+  }
   await loadStageOptions();
   go("import");
 }
@@ -626,12 +653,10 @@ const EXAM_CSV_HEADERS = [
 ];
 
 async function loadApps() {
-  if (!CFG.APPS_SCRIPT_URL || CFG.APPS_SCRIPT_URL.indexOf("PUT_YOUR") === 0)
-    return showMsg("appsMsg", "ยังไม่ได้ตั้งค่า APPS_SCRIPT_URL ในไฟล์ config.js", false);
-  showMsg("appsMsg", "กำลังโหลดข้อมูลจาก Google Sheet…", true);
+  showMsg("appsMsg", "กำลังโหลดข้อมูลใบสมัครจาก Google Sheet…", true);
   try {
-    const r = await sheetApi("adminListExam");
-    if (r.status !== "SUCCESS") return showMsg("appsMsg", r.msg, false);
+    // Worker เป็นตัวกลางเรียก Apps Script ให้ (เบราว์เซอร์ไม่ต้องรู้รหัส Sheet)
+    const r = await api("/api/admin/applications");
     appsData = r.list || [];
 
     const count = t => appsData.filter(a => a.examType.includes(t)).length;
@@ -652,7 +677,7 @@ async function loadApps() {
         ).join("")}</tr>`).join("")}</tbody>
       </table></div>`;
     showMsg("appsMsg", "โหลดข้อมูลสำเร็จ " + appsData.length + " รายการ", true);
-  } catch (e) { showMsg("appsMsg", "เชื่อมต่อ Google Sheet ไม่สำเร็จ: " + e.message, false); }
+  } catch (e) { showMsg("appsMsg", "โหลดข้อมูลใบสมัครไม่สำเร็จ: " + e.message, false); }
 }
 
 function downloadAppsCSV() {
@@ -670,14 +695,23 @@ function downloadAppsCSV() {
 }
 
 // ─── init ───────────────────────────────────────────────────────────────────
-if (KEY) {
-  $("view-login").classList.remove("active");
-  enterAdmin().catch(() => {
-    $("view-login").classList.add("active");
-    $("mainNav").classList.add("hidden");
-    showMsg("loginMsg", "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่", false);
-  });
+window.onGoogleLibraryLoad = initGoogleSignIn;
+
+async function boot() {
+  if (TOKEN) {
+    // มี session เดิม — ตรวจว่ายังใช้ได้ไหม ถ้าได้ก็เข้าเลยไม่ต้อง login ซ้ำ
+    try {
+      const me = await api("/api/admin/me");
+      return enterAdmin(me.user);
+    } catch (e) {
+      forceLogout();
+      showMsg("loginMsg", "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่", false);
+    }
+  }
+  // แสดงหน้า login — ปุ่ม Google จะถูกวาดเมื่อไลบรารีโหลดเสร็จ (onGoogleLibraryLoad)
+  if (typeof google !== "undefined" && google.accounts) initGoogleSignIn();
 }
+boot();
 </script>
 </body>
 </html>

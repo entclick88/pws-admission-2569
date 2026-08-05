@@ -7,6 +7,27 @@ DROP TABLE IF EXISTS records;
 DROP TABLE IF EXISTS stages;
 DROP TABLE IF EXISTS faqs;
 DROP TABLE IF EXISTS announcements;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS users;
+
+-- ── ผู้ดูแลระบบ (สร้างอัตโนมัติเมื่อ login ด้วย Google ครั้งแรก) ─────────────
+CREATE TABLE users (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  email      TEXT UNIQUE NOT NULL,
+  name       TEXT,
+  picture    TEXT,
+  role       TEXT NOT NULL DEFAULT 'admin',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── session หลังเข้าสู่ระบบ (จดจำการเข้าสู่ระบบได้ 30 วัน) ───────────────────
+CREATE TABLE sessions (
+  token      TEXT PRIMARY KEY,
+  user_id    INTEGER NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX idx_sessions_user ON sessions (user_id);
 
 -- ── ประกาศ / ข่าวสาร แสดงบนหน้าแรก ─────────────────────────────────────────
 CREATE TABLE announcements (

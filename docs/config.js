@@ -12,6 +12,12 @@ window.PWS_CONFIG = {
   // ได้จากคำสั่ง `npx wrangler deploy` เช่น https://pws-admission-api.<ชื่อ>.workers.dev
   WORKER_URL: "PUT_YOUR_WORKER_URL_HERE",
 
+  // ── เข้าสู่ระบบผู้ดูแลด้วย Google (หน้า admin.html) ──────────────────────
+  // OAuth 2.0 Client ID (ประเภท Web application) จาก Google Cloud Console
+  // ต้องตรงกับ GOOGLE_CLIENT_ID ใน worker/wrangler.toml
+  // และเพิ่ม URL ของ GitHub Pages ใน "Authorized JavaScript origins" ด้วย
+  GOOGLE_CLIENT_ID: "PUT_YOUR_GOOGLE_OAUTH_CLIENT_ID",
+
   // ── ไฟล์แนบ (สลิป / ปพ.1) → Cloudinary ──────────────────────────────────
   // สร้าง unsigned upload preset ที่ Settings → Upload → Upload presets
   // (Signing Mode = Unsigned) แล้วนำชื่อ preset กับ cloud name มาวางที่นี่

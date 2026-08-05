@@ -8,5 +8,19 @@ database_name = "pws-admission"
 # ⚠️ หลังรัน `npx wrangler d1 create pws-admission` ให้นำ database_id ที่ได้มาวางตรงนี้
 database_id = "PUT_YOUR_D1_DATABASE_ID_HERE"
 
-# รหัสผู้ดูแลระบบ ตั้งเป็น secret (ไม่เก็บในไฟล์นี้):
-#   npx wrangler secret put ADMIN_KEY
+[vars]
+# Client ID จาก Google Cloud Console (OAuth 2.0 Client ID ประเภท Web application)
+# — ใส่ได้เลย ไม่ใช่ความลับ ต้องตรงกับ GOOGLE_CLIENT_ID ใน docs/config.js
+GOOGLE_CLIENT_ID = "PUT_YOUR_GOOGLE_OAUTH_CLIENT_ID"
+
+# อีเมลผู้ดูแลระบบ (คั่นด้วย , ) — ได้สิทธิ์ admin แม้ไม่ได้อยู่ในโดเมนโรงเรียน
+ADMIN_EMAILS = "entclick88@gmail.com"
+
+# โดเมนอีเมลที่อนุญาตให้เข้าระบบผู้ดูแล (คั่นด้วย , )
+ALLOWED_DOMAINS = "psuwitsurat.ac.th"
+
+# URL ของ Apps Script Web App (/exec) — Worker ใช้ดึงใบสมัครจาก Google Sheet
+SHEET_API_URL = "PUT_YOUR_APPS_SCRIPT_EXEC_URL_HERE"
+
+# รหัสลับสำหรับเรียก Apps Script — ตั้งด้วย (ต้องตรงกับ ADMIN_KEY ใน Script Properties):
+#   npx wrangler secret put SHEET_API_KEY

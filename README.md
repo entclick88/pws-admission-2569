@@ -73,31 +73,55 @@ Sheet ที่ใช้: [`1jJgVdeGctUaB5CAMNYhA1asyl45YpUn72pTtZkpRTlc`](https
 2. Settings → Upload → Upload presets → Add upload preset
    ตั้ง **Signing Mode = Unsigned** → จดชื่อ preset
 
-### 3. Cloudflare Worker + D1 (ข้อมูลการประกาศ)
+### 3. Google OAuth (เข้าสู่ระบบผู้ดูแลด้วย Google)
+
+1. [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials
+2. Create Credentials → **OAuth client ID** → Application type **Web application**
+3. **Authorized JavaScript origins** ใส่ URL ของ GitHub Pages (เช่น `https://entclick88.github.io`)
+   และ `http://localhost:8744` ถ้าจะทดสอบในเครื่อง
+4. คัดลอก **Client ID** ไปใส่ทั้งใน `docs/config.js` (`GOOGLE_CLIENT_ID`) และ `worker/wrangler.toml`
+   (`GOOGLE_CLIENT_ID`) — ต้องเป็นค่าเดียวกัน
+
+> ใครเข้าระบบผู้ดูแลได้บ้าง คุมที่ `worker/wrangler.toml` — `ALLOWED_DOMAINS` (ทุกคนในโดเมน
+> เช่น `psuwitsurat.ac.th`) และ `ADMIN_EMAILS` (อีเมลเฉพาะราย) บัญชีที่ login ครั้งแรกจะถูกบันทึกลงตาราง `users` อัตโนมัติ
+
+### 4. Cloudflare Worker + D1 (ข้อมูลการประกาศ + session ผู้ดูแล)
 
 ```bash
 cd worker
 npx wrangler d1 create pws-admission          # นำ database_id ที่ได้ไปใส่ใน wrangler.toml
 npx wrangler d1 execute pws-admission --remote --file=schema.sql
-npx wrangler secret put ADMIN_KEY             # ตั้งรหัสผู้ดูแล
+npx wrangler secret put SHEET_API_KEY         # = ADMIN_KEY ใน Apps Script (สำหรับดึงใบสมัคร)
 npx wrangler deploy                            # ได้ URL https://pws-admission-api.<ชื่อ>.workers.dev
 ```
 
-`schema.sql` สร้างตารางพร้อมข้อมูลตั้งต้นให้เลย — ประกาศ 3 รายการ, รอบการประกาศ 4 รอบ,
-และ **FAQ 25 ชุดที่แตกจากประกาศฉบับเต็ม** (ค่าสมัคร คุณสมบัติ เอกสาร วันสอบ ค่าเทอม การยืนยันสิทธิ์ ฯลฯ)
+แก้ `worker/wrangler.toml` ก่อน deploy: ใส่ `database_id`, `GOOGLE_CLIENT_ID`, `ADMIN_EMAILS`,
+`ALLOWED_DOMAINS` และ `SHEET_API_URL` (= URL `/exec` ของ Apps Script)
 
-### 4. เชื่อมทุกอย่างเข้าด้วยกัน
+`schema.sql` สร้างตารางพร้อมข้อมูลตั้งต้นให้เลย — ผู้ดูแล/`sessions`, ประกาศ 3 รายการ,
+รอบการประกาศ 4 รอบ, และ **FAQ 25 ชุดที่แตกจากประกาศฉบับเต็ม**
 
-แก้ [`docs/config.js`](docs/config.js) ใส่ค่าทั้ง 4 อย่าง แล้ว push ขึ้น GitHub
+### 5. เชื่อมทุกอย่างเข้าด้วยกัน
+
+แก้ [`docs/config.js`](docs/config.js) แล้ว push ขึ้น GitHub
 
 ```js
 APPS_SCRIPT_URL:   "https://script.google.com/macros/s/.../exec",
 WORKER_URL:        "https://pws-admission-api.xxx.workers.dev",
+GOOGLE_CLIENT_ID:  "xxxx.apps.googleusercontent.com",
 CLOUDINARY_CLOUD:  "your-cloud-name",
 CLOUDINARY_PRESET: "your-unsigned-preset",
 ```
 
 เปิด GitHub Pages โดย serve จากโฟลเดอร์ `docs/`
+
+## การเข้าสู่ระบบผู้ดูแล (admin.html)
+
+- เจ้าหน้าที่กดปุ่ม **"ลงชื่อเข้าใช้ด้วย Google"** เลือกบัญชีโรงเรียน — ไม่มีรหัสผ่านให้จำ
+- ติ๊ก **"จดจำการเข้าสู่ระบบไว้ 30 วัน"** (ค่าเริ่มต้น) เพื่อให้เข้าครั้งต่อไปโดยไม่ต้อง login ซ้ำ
+  (session token เก็บใน `localStorage` ของเครื่องนั้น) หากไม่ติ๊ก session จะหมดเมื่อปิดเบราว์เซอร์ (12 ชม.)
+- ดึงใบสมัครจาก Google Sheet ผ่าน Worker เป็นตัวกลาง (`/api/admin/applications`) — เบราว์เซอร์ไม่ต้องรู้รหัส Sheet
+- ผู้สมัคร/ผู้ปกครองยัง**ไม่ต้อง login** สืบค้นด้วยเลขบัตรประชาชนเหมือนเดิม
 
 ---
 
