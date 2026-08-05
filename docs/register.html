@@ -387,8 +387,8 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="config.js"></script>
 <script>
-const CFG     = window.PWS_CONFIG || {};
-const API_URL = CFG.APPS_SCRIPT_URL;
+const CFG = window.PWS_CONFIG || {};
+const API = (CFG.WORKER_URL || "").replace(/\/+$/, "");
 
 const EXAM_TYPES = [
   { v:"สอบคัดเลือกเข้าศึกษาต่อ ชั้นมัธยมศึกษาปีที่ 1", code:"M1",
@@ -443,13 +443,25 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s)
   .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
+// ยิงไป Cloudflare Worker (เก็บใบสมัครใน D1) — คืนรูปแบบ { status, msg, application }
+const EXAM_PATHS = {
+  submitExam: "/api/exam/submit",
+  updateExam: "/api/exam/update",
+  lookupExam: "/api/exam/lookup"
+};
 async function api(action, payload) {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, payload: payload || {} })
-  });
-  return res.json();
+  try {
+    const res = await fetch(API + EXAM_PATHS[action], {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {})
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { status: "FAIL", msg: data.error || "เชื่อมต่อระบบไม่สำเร็จ" };
+    return data;   // { status:'SUCCESS', msg, application }
+  } catch (e) {
+    return { status: "FAIL", msg: "เชื่อมต่อระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" };
+  }
 }
 
 function go(v) {

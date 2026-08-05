@@ -9,6 +9,30 @@ DROP TABLE IF EXISTS faqs;
 DROP TABLE IF EXISTS announcements;
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS applications;
+DROP TABLE IF EXISTS app_counters;
+
+-- ── ใบสมัครสอบ ปีการศึกษา 2569 (เก็บใน D1 ทั้งหมด ไม่ใช้ Google Sheet) ────────
+-- ฟิลด์รายละเอียดทั้งหมดเก็บเป็น JSON ในคอลัมน์ data (คีย์ camelCase ตรงกับหน้าเว็บ)
+CREATE TABLE applications (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  app_no     TEXT UNIQUE,
+  citizen_id TEXT UNIQUE NOT NULL,
+  birth_date TEXT,
+  exam_type  TEXT,
+  status     TEXT NOT NULL DEFAULT 'รอตรวจสอบ',
+  data       TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX idx_app_cid ON applications (citizen_id);
+
+-- ตัวนับเลขที่ใบสมัครแยกตามประเภท (M1/M4/PP/PM) — ใช้ UPDATE ... RETURNING กันเลขซ้ำ
+CREATE TABLE app_counters (
+  prefix TEXT PRIMARY KEY,
+  n      INTEGER NOT NULL DEFAULT 0
+);
+INSERT INTO app_counters (prefix, n) VALUES ('M1',0),('M4',0),('PP',0),('PM',0);
 
 -- ── ผู้ดูแลระบบ (สร้างอัตโนมัติเมื่อ login ด้วย Google ครั้งแรก) ─────────────
 CREATE TABLE users (

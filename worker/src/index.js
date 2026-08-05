@@ -98,6 +98,67 @@ const RECORD_FIELDS = [
   'report_room', 'exam_date', 'time_slot', 'score', 'rank_no', 'note',
 ];
 
+// ── ใบสมัครสอบ (เก็บใน D1) ──────────────────────────────────────────────────
+const EXAM_PREFIX = {
+  'สอบคัดเลือกเข้าศึกษาต่อ ชั้นมัธยมศึกษาปีที่ 1': 'M1',
+  'สอบคัดเลือกเข้าศึกษาต่อ ชั้นมัธยมศึกษาปีที่ 4': 'M4',
+  'สอบวัดความรู้ (Pre-Test) ช่วงชั้นประถมศึกษาตอนปลาย (ป.4 - 6)': 'PP',
+  'สอบวัดความรู้ (Pre-Test) ช่วงชั้นมัธยมศึกษาตอนต้น (ม.1 - 3)': 'PM',
+};
+
+// ตรวจข้อมูลใบสมัคร — คืนข้อความ error หรือ "" ถ้าผ่าน
+function validateApplication(p, isUpdate) {
+  const prefix = EXAM_PREFIX[String(p.examType || '').trim()];
+  if (!prefix) return 'กรุณาเลือกประเภทการสมัครให้ถูกต้อง';
+
+  const required = [
+    ['prefix', 'คำนำหน้า'], ['firstName', 'ชื่อ'], ['lastName', 'นามสกุล'],
+    ['citizenId', 'เลขประจำตัวประชาชน'], ['birthDate', 'วันเกิด'],
+    ['currentGrade', 'ระดับชั้นปัจจุบัน'], ['school', 'โรงเรียนปัจจุบัน'],
+    ['studentPhone', 'เบอร์โทรนักเรียน'],
+    ['guardianName', 'ชื่อ-สกุลผู้ปกครอง'], ['guardianPhone', 'เบอร์โทรผู้ปกครอง'],
+  ];
+  for (const [k, label] of required) {
+    if (!String(p[k] || '').trim()) return `กรุณากรอก "${label}" ให้ครบถ้วน`;
+  }
+  if (!isValidThaiId(p.citizenId)) return 'เลขประจำตัวประชาชนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง';
+
+  if (prefix === 'M1' || prefix === 'M4') {
+    if (!String(p.applyGroup || '').trim()) return 'กรุณาเลือกกลุ่มการรับสมัคร';
+    if (String(p.applyGroup).indexOf('บุตร') === 0 && !String(p.psuPersonName || '').trim()) {
+      return 'กรุณาระบุชื่อ-สกุลบุคลากร/ศิษย์เก่า ม.อ. ที่ใช้สิทธิ์';
+    }
+  }
+  if (prefix === 'M4') {
+    const g = parseFloat(p.gpax);
+    if (isNaN(g)) return 'กรุณากรอกผลการเรียนเฉลี่ยสะสม (GPAX)';
+    if (g < 2.50) return 'ผู้สมัคร ม.4 ต้องมีผลการเรียนเฉลี่ยสะสม ม.1 และ ม.2 ไม่ต่ำกว่า 2.50';
+    if (g > 4.00) return 'ผลการเรียนเฉลี่ยสะสมต้องไม่เกิน 4.00';
+  }
+
+  const okUrl = u => /^https:\/\/res\.cloudinary\.com\//.test(String(u || ''));
+  if (!isUpdate && !okUrl(p.slipUrl)) return 'กรุณาแนบภาพหลักฐานการชำระค่าธรรมเนียมการสมัครสอบ 500 บาท';
+  if (!isUpdate && prefix === 'M4' && !okUrl(p.docsUrl)) {
+    return 'ผู้สมัคร ม.4 ต้องแนบไฟล์ PDF ระเบียนแสดงผลการเรียน (ปพ.1 : บ) และใบรับรองความประพฤติ';
+  }
+  if (!isUpdate && !p.consent) return 'กรุณายืนยันการรับรองความถูกต้องของข้อมูลก่อนส่งใบสมัคร';
+  return '';
+}
+
+// รับเฉพาะ URL ของ Cloudinary กันการยัด URL แปลกปลอม
+const cleanUrl = u => (/^https:\/\/res\.cloudinary\.com\//.test(String(u || '')) ? String(u) : '');
+
+// ประกอบ object ใบสมัครที่ส่งกลับหน้าเว็บ (คีย์ camelCase ตรงกับ register.html/admin.html)
+function rowToApplication(row) {
+  let data = {};
+  try { data = JSON.parse(row.data || '{}'); } catch (e) { data = {}; }
+  return Object.assign({}, data, {
+    appNo: row.app_no, citizenId: row.citizen_id, birthDate: row.birth_date,
+    examType: row.exam_type, status: row.status,
+    createdAt: row.created_at, updatedAt: row.updated_at,
+  });
+}
+
 // ── chatbot: จับคู่คำสำคัญ คำที่ยาวและตรงกว่าได้คะแนนสูงกว่า ─────────────────
 function matchFaq(question, faqs) {
   const q = String(question || '').toLowerCase().trim();
@@ -208,6 +269,90 @@ export default {
         return json({ citizen_id: cid, full_name: anyName, stages: out });
       }
 
+      // ══════════════ ใบสมัครสอบ (PUBLIC → D1) ══════════════
+
+      // ส่งใบสมัคร
+      if (path === '/api/exam/submit' && m === 'POST') {
+        const p = await req.json();
+        const e = validateApplication(p, false);
+        if (e) return json({ status: 'FAIL', msg: e });
+
+        const cid = digits(p.citizenId);
+        const dup = await env.DB.prepare('SELECT app_no FROM applications WHERE citizen_id = ?').bind(cid).first();
+        if (dup) {
+          return json({ status: 'FAIL',
+            msg: `เลขประจำตัวประชาชนนี้ได้สมัครไว้แล้ว (เลขที่ใบสมัคร ${dup.app_no})\n` +
+                 'หากต้องการแก้ไขข้อมูลหรือพิมพ์ใบสมัครซ้ำ กรุณาใช้เมนู "สืบค้น / แก้ไขใบสมัคร"' });
+        }
+
+        const prefix = EXAM_PREFIX[String(p.examType).trim()];
+        const cnt = await env.DB.prepare('UPDATE app_counters SET n = n + 1 WHERE prefix = ? RETURNING n')
+          .bind(prefix).first();
+        const appNo = prefix + '-' + String(cnt.n).padStart(4, '0');
+
+        // เก็บทุกฟิลด์เป็น JSON (รวม slipUrl/docsUrl ที่ผ่านการกรอง)
+        const data = Object.assign({}, p);
+        delete data.consent;
+        data.citizenId = cid;
+        data.slipUrl = cleanUrl(p.slipUrl);
+        data.docsUrl = cleanUrl(p.docsUrl);
+
+        await env.DB.prepare(
+          `INSERT INTO applications (app_no, citizen_id, birth_date, exam_type, status, data)
+           VALUES (?,?,?,?, 'รอตรวจสอบ', ?)`
+        ).bind(appNo, cid, String(p.birthDate || ''), String(p.examType || ''), JSON.stringify(data)).run();
+
+        const row = await env.DB.prepare('SELECT * FROM applications WHERE citizen_id = ?').bind(cid).first();
+        return json({ status: 'SUCCESS',
+          msg: 'ส่งใบสมัครเรียบร้อยแล้ว เลขที่ใบสมัครของคุณคือ ' + appNo,
+          application: rowToApplication(row) });
+      }
+
+      // สืบค้นใบสมัคร (เลขบัตร + วันเกิด)
+      if (path === '/api/exam/lookup' && m === 'POST') {
+        const b = await req.json();
+        const cid = digits(b.citizenId);
+        if (!isValidThaiId(cid)) return json({ status: 'FAIL', msg: 'กรุณากรอกเลขประจำตัวประชาชน 13 หลัก' });
+        if (!b.birthDate) return json({ status: 'FAIL', msg: 'กรุณาระบุวันเกิดเพื่อยืนยันตัวตน' });
+
+        const row = await env.DB.prepare('SELECT * FROM applications WHERE citizen_id = ?').bind(cid).first();
+        if (!row) return json({ status: 'FAIL', msg: 'ไม่พบใบสมัครของเลขประจำตัวประชาชนนี้' });
+        if (String(row.birth_date) !== String(b.birthDate)) {
+          return json({ status: 'FAIL', msg: 'วันเกิดไม่ตรงกับข้อมูลที่ลงทะเบียนไว้' });
+        }
+        return json({ status: 'SUCCESS', application: rowToApplication(row) });
+      }
+
+      // แก้ไขใบสมัคร
+      if (path === '/api/exam/update' && m === 'POST') {
+        const p = await req.json();
+        const e = validateApplication(p, true);
+        if (e) return json({ status: 'FAIL', msg: e });
+
+        const cid = digits(p.citizenId);
+        const row = await env.DB.prepare('SELECT * FROM applications WHERE citizen_id = ?').bind(cid).first();
+        if (!row) return json({ status: 'FAIL', msg: 'ไม่พบใบสมัครของเลขประจำตัวประชาชนนี้' });
+        if (String(row.birth_date) !== String(p.birthDate)) {
+          return json({ status: 'FAIL', msg: 'วันเกิดไม่ตรงกับข้อมูลที่ลงทะเบียนไว้' });
+        }
+
+        const old = rowToApplication(row);
+        const data = Object.assign({}, p);
+        delete data.consent;
+        data.citizenId = cid;
+        // แนบไฟล์ใหม่เฉพาะกรณีส่งมา ไม่งั้นคงไฟล์เดิม
+        data.slipUrl = cleanUrl(p.slipUrl) || old.slipUrl || '';
+        data.docsUrl = cleanUrl(p.docsUrl) || old.docsUrl || '';
+
+        await env.DB.prepare(
+          `UPDATE applications SET exam_type = ?, data = ?, updated_at = datetime('now') WHERE citizen_id = ?`
+        ).bind(String(p.examType || ''), JSON.stringify(data), cid).run();
+
+        const updated = await env.DB.prepare('SELECT * FROM applications WHERE citizen_id = ?').bind(cid).first();
+        return json({ status: 'SUCCESS', msg: 'แก้ไขข้อมูลใบสมัครเรียบร้อยแล้ว',
+          application: rowToApplication(updated) });
+      }
+
       // ══════════════ ADMIN ══════════════
 
       // เข้าสู่ระบบด้วย Google
@@ -227,20 +372,13 @@ export default {
         return json({ ok: true });
       }
 
-      // ดึงใบสมัครจาก Google Sheet (Worker เป็นตัวกลาง ไม่เปิดรหัส Sheet ให้เบราว์เซอร์)
+      // ดึงใบสมัครทั้งหมดจาก D1 (สำหรับตาราง + ดาวน์โหลด CSV)
       if (path === '/api/admin/applications' && m === 'GET') {
         needAdmin(user);
-        if (!env.SHEET_API_URL || !env.SHEET_API_KEY) {
-          return err('ยังไม่ได้ตั้งค่า SHEET_API_URL / SHEET_API_KEY ใน Worker', 500);
-        }
-        const r = await fetch(env.SHEET_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'adminListExam', payload: { key: env.SHEET_API_KEY } }),
-        });
-        const data = await r.json().catch(() => ({}));
-        if (data.status !== 'SUCCESS') return err(data.msg || 'ดึงข้อมูลใบสมัครไม่สำเร็จ', 502);
-        return json({ list: data.list || [] });
+        const { results } = await env.DB.prepare(
+          'SELECT * FROM applications ORDER BY app_no'
+        ).all();
+        return json({ list: (results || []).map(rowToApplication) });
       }
 
       // ---- ประกาศ ----

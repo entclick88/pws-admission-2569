@@ -17,9 +17,3 @@ ADMIN_EMAILS = "entclick88@gmail.com"
 
 # โดเมนอีเมลที่อนุญาตให้เข้าระบบผู้ดูแล (คั่นด้วย , )
 ALLOWED_DOMAINS = "psuwitsurat.ac.th"
-
-# URL ของ Apps Script Web App (/exec) — Worker ใช้ดึงใบสมัครจาก Google Sheet
-SHEET_API_URL = "PUT_YOUR_APPS_SCRIPT_EXEC_URL_HERE"
-
-# รหัสลับสำหรับเรียก Apps Script — ตั้งด้วย (ต้องตรงกับ ADMIN_KEY ใน Script Properties):
-#   npx wrangler secret put SHEET_API_KEY

@@ -7,13 +7,12 @@
 ## สถาปัตยกรรม
 
 ```
-GitHub Pages (docs/)  ──┬─→  Apps Script  ─→  Google Sheet     : ใบสมัครสอบ
-                        ├─→  Cloudinary                        : ไฟล์แนบ (สลิป / ปพ.1)
-                        └─→  Cloudflare Worker  ─→  D1         : ข้อมูลการประกาศทั้งหมด
+GitHub Pages (docs/)  ──┬─→  Cloudinary                      : ไฟล์แนบ (สลิป / ปพ.1)
+                        └─→  Cloudflare Worker  ─→  D1        : ใบสมัคร + ประกาศ + ผลสอบ ทั้งหมด
 ```
 
-แยกหน้าที่ตามลักษณะข้อมูล — ใบสมัครอยู่ใน Sheet ที่เจ้าหน้าที่เปิดดู/แก้ไขเองได้สะดวก
-ส่วนข้อมูลที่ต้องให้ผู้สมัครค้นหาพร้อมกันจำนวนมาก (รายชื่อ ที่นั่งสอบ ผลสอบ) อยู่ใน D1 ซึ่งอ่านเร็วและรับโหลดสูงได้
+ข้อมูลทั้งหมด (ใบสมัคร ประกาศ FAQ รายชื่อ/ที่นั่งสอบ ผลสอบ และ session ผู้ดูแล) เก็บใน **Cloudflare D1**
+ที่เดียว อ่านเร็วและรับผู้ใช้พร้อมกันจำนวนมากได้ · ไฟล์แนบ (รูป/PDF) เก็บที่ Cloudinary · ไม่ใช้ Google Sheet
 
 ## หน้าเว็บ
 
@@ -32,7 +31,7 @@ GitHub Pages (docs/)  ──┬─→  Apps Script  ─→  Google Sheet     : �
 - ตรวจคุณสมบัติอัตโนมัติ — เลขบัตรประชาชนตรวจด้วย checksum จริงทั้งฝั่งเว็บและเซิร์ฟเวอร์,
   ผู้สมัคร ม.4 ต้องมี GPAX ≥ 2.50 และแนบ ปพ.1 : บ + ใบรับรองความประพฤติเป็น PDF ไฟล์เดียว
 - 1 เลขบัตร 1 ใบสมัคร · เลขที่ใบสมัครออกอัตโนมัติแยกตามประเภท (`M1-0001` `M4-0001` `PP-0001` `PM-0001`)
-  ใช้ `LockService` กันเลขซ้ำเมื่อมีผู้สมัครพร้อมกัน
+  ใช้ตาราง `app_counters` + `UPDATE ... RETURNING` ใน D1 กันเลขซ้ำเมื่อมีผู้สมัครพร้อมกัน
 - แก้ไขใบสมัครและพิมพ์ซ้ำได้ด้วยเลขบัตรประชาชน + วันเกิด
 - ใบสมัคร PDF ขนาด A4 หน้าเดียว สร้างด้วย html2pdf (ภาษาไทยคมชัด) มีปุ่มพิมพ์เป็นทางสำรอง
 
@@ -54,29 +53,16 @@ GitHub Pages (docs/)  ──┬─→  Apps Script  ─→  Google Sheet     : �
 
 ## ติดตั้ง
 
-### 1. Google Sheet + Apps Script (ใบสมัคร)
-
-Sheet ที่ใช้: [`1jJgVdeGctUaB5CAMNYhA1asyl45YpUn72pTtZkpRTlc`](https://docs.google.com/spreadsheets/d/1jJgVdeGctUaB5CAMNYhA1asyl45YpUn72pTtZkpRTlc/edit)
-
-1. เปิด [script.google.com](https://script.google.com) → New project → วางโค้ดจาก [`Code.gs`](Code.gs)
-2. Project Settings → Show "appsscript.json" → วางเนื้อหาจาก [`appsscript.json`](appsscript.json)
-3. รันฟังก์ชัน `setup()` หนึ่งครั้ง → สร้างชีท `Applicants2569` พร้อมหัวตาราง และสร้าง `ADMIN_KEY` ให้อัตโนมัติ
-   (ดูรหัสได้ใน Execution log หรือรัน `showAdminKey()` ภายหลัง)
-4. Deploy → New deployment → Web app → Execute as **Me** / Who has access **Anyone** → คัดลอก URL `/exec`
-
-> ระบบนี้**ไม่ใช้ DriveApp แล้ว** (ไฟล์แนบไปที่ Cloudinary) จึงใช้บัญชีองค์กร `.ac.th` deploy ได้
-> ไม่ติดปัญหาสิทธิ์ `ไม่ได้รับอนุญาตให้เข้าถึง: DriveApp` แบบที่เคยเจอในโปรเจค BARNMAN
-
-### 2. Cloudinary (ไฟล์แนบ)
+### 1. Cloudinary (ไฟล์แนบ)
 
 1. สมัคร [cloudinary.com](https://cloudinary.com) (ฟรี) → จด **Cloud name**
 2. Settings → Upload → Upload presets → Add upload preset
    ตั้ง **Signing Mode = Unsigned** → จดชื่อ preset
 
-### 3. Google OAuth (เข้าสู่ระบบผู้ดูแลด้วย Google)
+### 2. Google OAuth (เข้าสู่ระบบผู้ดูแลด้วย Google)
 
-1. [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials
-2. Create Credentials → **OAuth client ID** → Application type **Web application**
+1. [Google Cloud Console](https://console.cloud.google.com) → สร้างโปรเจกต์ → OAuth consent screen (External, Publish)
+2. Credentials → Create Credentials → **OAuth client ID** → Application type **Web application**
 3. **Authorized JavaScript origins** ใส่ URL ของ GitHub Pages (เช่น `https://entclick88.github.io`)
    และ `http://localhost:8744` ถ้าจะทดสอบในเครื่อง
 4. คัดลอก **Client ID** ไปใส่ทั้งใน `docs/config.js` (`GOOGLE_CLIENT_ID`) และ `worker/wrangler.toml`
@@ -85,28 +71,25 @@ Sheet ที่ใช้: [`1jJgVdeGctUaB5CAMNYhA1asyl45YpUn72pTtZkpRTlc`](https
 > ใครเข้าระบบผู้ดูแลได้บ้าง คุมที่ `worker/wrangler.toml` — `ALLOWED_DOMAINS` (ทุกคนในโดเมน
 > เช่น `psuwitsurat.ac.th`) และ `ADMIN_EMAILS` (อีเมลเฉพาะราย) บัญชีที่ login ครั้งแรกจะถูกบันทึกลงตาราง `users` อัตโนมัติ
 
-### 4. Cloudflare Worker + D1 (ข้อมูลการประกาศ + session ผู้ดูแล)
+### 3. Cloudflare Worker + D1 (เก็บข้อมูลทั้งหมด)
 
 ```bash
 cd worker
 npx wrangler d1 create pws-admission          # นำ database_id ที่ได้ไปใส่ใน wrangler.toml
 npx wrangler d1 execute pws-admission --remote --file=schema.sql
-npx wrangler secret put SHEET_API_KEY         # = ADMIN_KEY ใน Apps Script (สำหรับดึงใบสมัคร)
 npx wrangler deploy                            # ได้ URL https://pws-admission-api.<ชื่อ>.workers.dev
 ```
 
-แก้ `worker/wrangler.toml` ก่อน deploy: ใส่ `database_id`, `GOOGLE_CLIENT_ID`, `ADMIN_EMAILS`,
-`ALLOWED_DOMAINS` และ `SHEET_API_URL` (= URL `/exec` ของ Apps Script)
+แก้ `worker/wrangler.toml` ก่อน deploy: ใส่ `database_id`, `GOOGLE_CLIENT_ID`, `ADMIN_EMAILS`, `ALLOWED_DOMAINS`
 
-`schema.sql` สร้างตารางพร้อมข้อมูลตั้งต้นให้เลย — ผู้ดูแล/`sessions`, ประกาศ 3 รายการ,
-รอบการประกาศ 4 รอบ, และ **FAQ 25 ชุดที่แตกจากประกาศฉบับเต็ม**
+`schema.sql` สร้างตารางพร้อมข้อมูลตั้งต้นให้เลย — `applications` + `app_counters` (ใบสมัคร),
+ผู้ดูแล/`sessions`, ประกาศ 3 รายการ, รอบการประกาศ 4 รอบ, และ **FAQ 25 ชุดที่แตกจากประกาศฉบับเต็ม**
 
-### 5. เชื่อมทุกอย่างเข้าด้วยกัน
+### 4. เชื่อมทุกอย่างเข้าด้วยกัน
 
 แก้ [`docs/config.js`](docs/config.js) แล้ว push ขึ้น GitHub
 
 ```js
-APPS_SCRIPT_URL:   "https://script.google.com/macros/s/.../exec",
 WORKER_URL:        "https://pws-admission-api.xxx.workers.dev",
 GOOGLE_CLIENT_ID:  "xxxx.apps.googleusercontent.com",
 CLOUDINARY_CLOUD:  "your-cloud-name",
@@ -127,7 +110,10 @@ CLOUDINARY_PRESET: "your-unsigned-preset",
 
 ## การใช้งานประจำวันของเจ้าหน้าที่
 
-เข้า `admin.html` → ใส่ `ADMIN_KEY`
+เข้า `admin.html` → **ลงชื่อเข้าใช้ด้วย Google** (บัญชีในโดเมนที่กำหนดหรืออีเมลใน `ADMIN_EMAILS`)
+
+**ดูใบสมัคร / ดาวน์โหลด CSV** — แท็บ "ใบสมัคร (CSV)" ดึงใบสมัครทั้งหมดจาก D1 มาแสดงและดาวน์โหลดเป็น CSV
+(มี BOM เปิดใน Excel ภาษาไทยไม่เพี้ยน)
 
 **นำเข้ารายชื่อ / ผลสอบ** — คัดลอกตารางจาก Excel หรือ Google Sheets มาวางได้เลย
 (รองรับทั้งข้อมูลคั่นด้วย Tab และ CSV) ต้องมีคอลัมน์ `citizen_id` เสมอ ระบบจะข้ามแถวที่เลขไม่ครบ 13 หลัก
@@ -167,10 +153,9 @@ CLOUDINARY_PRESET: "your-unsigned-preset",
 
 ## หมายเหตุการพัฒนา
 
-- แก้โค้ด `Code.gs` แล้วต้อง **Deploy → Manage deployments → Edit → New version** ทุกครั้ง
-  URL เดิมถึงจะเห็นโค้ดใหม่ (บทเรียนจากโปรเจค inspire-space-survey)
 - แก้ Worker แล้วรัน `npx wrangler deploy` ใหม่ · แก้ไฟล์ใน `docs/` แค่ push ขึ้น GitHub
-- ลำดับคอลัมน์ `EXAM_COLS` ใน `Code.gs` ต้องตรงกับ `EXAM_CSV_HEADERS` ใน `admin.html` เสมอ
+- ใบสมัครเก็บใน D1 ตาราง `applications` — ฟิลด์ทั้งหมดเก็บเป็น JSON ในคอลัมน์ `data` (คีย์ camelCase
+  ตรงกับ `EXAM_CSV_HEADERS` ใน `admin.html`) · รับเฉพาะไฟล์แนบที่เป็น URL ของ Cloudinary
 - ความสูงของใบสมัคร (`#appSlip` ใน `register.html`) ต้องไม่เกิน ~1.42 เท่าของความกว้าง
   ไม่งั้น PDF จะล้นไปหน้าที่ 2
 

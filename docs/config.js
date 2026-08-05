@@ -4,11 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 window.PWS_CONFIG = {
 
-  // ── ใบสมัครสอบ → Google Sheet (Apps Script Web App) ──────────────────────
-  // Deploy → New deployment → Web app → คัดลอก URL ที่ลงท้าย /exec มาวางที่นี่
-  APPS_SCRIPT_URL: "PUT_YOUR_APPS_SCRIPT_EXEC_URL_HERE",
-
-  // ── ข้อมูลการประกาศ → Cloudflare Worker + D1 ────────────────────────────
+  // ── Cloudflare Worker + D1 (ใบสมัคร + ประกาศ + ผลสอบ ทั้งหมด) ────────────
   // ได้จากคำสั่ง `npx wrangler deploy` เช่น https://pws-admission-api.<ชื่อ>.workers.dev
   WORKER_URL: "https://pws-admission-api.entclick88.workers.dev",
 
