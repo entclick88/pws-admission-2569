@@ -16,7 +16,7 @@ window.PWS_CONFIG = {
   // OAuth 2.0 Client ID (ประเภท Web application) จาก Google Cloud Console
   // ต้องตรงกับ GOOGLE_CLIENT_ID ใน worker/wrangler.toml
   // และเพิ่ม URL ของ GitHub Pages ใน "Authorized JavaScript origins" ด้วย
-  GOOGLE_CLIENT_ID: "PUT_YOUR_GOOGLE_OAUTH_CLIENT_ID",
+  GOOGLE_CLIENT_ID: "559611452932-2nj81bqtjdtrrmfs4df5chm5p9nkdhtm.apps.googleusercontent.com",
 
   // ── ไฟล์แนบ (สลิป / ปพ.1) → Cloudinary ──────────────────────────────────
   // สร้าง unsigned upload preset ที่ Settings → Upload → Upload presets
