@@ -33,7 +33,7 @@
   .card h3{font-size:1.06rem;color:var(--primary);margin-bottom:12px}
   .card .body{white-space:pre-wrap;line-height:1.75}
   .card .meta{font-size:.8rem;color:var(--muted);margin-top:10px}
-  .card a.doclink{display:inline-block;margin-top:12px;background:#eef4fb;color:var(--primary);
+  .card a.doclink{display:inline-block;margin:12px 10px 0 0;background:#eef4fb;color:var(--primary);
                   padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem}
   .card a.doclink:hover{background:#dfeaf7}
 
@@ -115,22 +115,22 @@
 <header>
   <img class="logo" src="logo.png" alt="ตราโรงเรียน มอ. วิทยานุสรณ์ สุราษฎร์ธานี">
   <h1>โรงเรียน มอ. วิทยานุสรณ์ สุราษฎร์ธานี</h1>
-  <h2>งานรับนักเรียนใหม่ ปีการศึกษา 2569</h2>
-  <a class="cta" href="register.html">📝 สมัครสอบออนไลน์</a>
+  <h2>รับนักเรียนใหม่ ปีการศึกษา 2570</h2>
+  <a class="cta" href="register.html" target="_blank" rel="noopener">📝 สมัครสอบออนไลน์</a>
 </header>
 
 <nav>
   <div class="wrap">
-    <button data-v="home"   class="active" onclick="go('home')">📢 ประกาศ</button>
+    <button data-v="chat"   class="active" onclick="go('chat')">💬 ถาม-ตอบ</button>
+    <button data-v="home"   onclick="go('home')">📢 ประกาศ</button>
     <button data-v="search" onclick="go('search')">🔍 สืบค้นรายบุคคล</button>
-    <button data-v="chat"   onclick="go('chat')">💬 ถาม-ตอบ</button>
   </div>
 </nav>
 
 <main>
 
 <!-- ═══ ประกาศ ═══ -->
-<section id="view-home" class="view active">
+<section id="view-home" class="view">
   <div id="announceBox"><div class="card loading">กำลังโหลดประกาศ…</div></div>
 </section>
 
@@ -153,20 +153,38 @@
   <div id="searchResult"></div>
 </section>
 
-<!-- ═══ Chatbot ═══ -->
-<section id="view-chat" class="view">
+<!-- ═══ Chatbot (หน้าแรก) ═══ -->
+<section id="view-chat" class="view active">
   <div class="card">
     <h3>💬 น้องแอดมิท — ผู้ช่วยตอบคำถามการรับสมัคร</h3>
-    <p class="hint" style="margin-bottom:12px">ตอบจากข้อมูลในประกาศรับสมัครฉบับเต็ม ลองกดคำถามยอดฮิตด้านล่างได้เลย</p>
+    <p class="hint" style="margin-bottom:12px">ถามได้เลยค่ะ พิมพ์สั้น ๆ ก็เข้าใจ เช่น "ค่าสมัคร" "สอบวันไหน" "ใช้เอกสารอะไร"
+      หากน้องแอดมิทตอบไม่ได้ ระบบจะส่งคำถามให้เจ้าหน้าที่ตอบให้ค่ะ</p>
     <div class="chips" id="chipBox"></div>
     <div id="chatLog">
-      <div class="bubble bot">สวัสดีค่ะ 🙋‍♀️ น้องแอดมิทยินดีตอบคำถามเกี่ยวกับการรับสมัครนักเรียนใหม่ ปีการศึกษา 2569 ค่ะ
+      <div class="bubble bot">สวัสดีค่ะ 🙋‍♀️ น้องแอดมิทยินดีตอบคำถามเกี่ยวกับการรับนักเรียนใหม่ ปีการศึกษา 2570 ค่ะ
 พิมพ์คำถามได้เลย เช่น "ค่าสมัครเท่าไร" "สอบวันไหน" "ใช้เอกสารอะไรบ้าง"</div>
     </div>
     <div class="chat-row">
       <input id="chatInput" placeholder="พิมพ์คำถามที่นี่…" onkeydown="if(event.key==='Enter')sendChat()">
       <button class="btn" onclick="sendChat()">ส่ง</button>
     </div>
+  </div>
+
+  <!-- คำถามที่รอเจ้าหน้าที่ตอบ (เก็บรหัสไว้ในเครื่องนี้) -->
+  <div class="card hidden" id="myQBox">
+    <h3>📮 คำถามของฉันที่ส่งให้เจ้าหน้าที่</h3>
+    <p class="hint" style="margin-bottom:10px">ระบบจำรหัสคำถามไว้ในเครื่องนี้ กลับมาเปิดหน้านี้เมื่อไรก็ดูคำตอบได้</p>
+    <div id="myQList"></div>
+    <div class="btn-row"><button class="btn secondary" onclick="refreshMyQuestions()">🔄 ตรวจสอบคำตอบ</button></div>
+  </div>
+
+  <div class="card">
+    <h3>🔎 ตรวจสอบคำตอบด้วยรหัสคำถาม</h3>
+    <p class="hint" style="margin-bottom:10px">กรณีถามจากเครื่องอื่น กรอกรหัสคำถาม (เช่น Q-0001) เพื่อดูคำตอบ</p>
+    <div class="msg" id="ticketMsg"></div>
+    <input id="ticketInput" placeholder="Q-0001" onkeydown="if(event.key==='Enter')checkTicket()">
+    <div class="btn-row"><button class="btn" onclick="checkTicket()">ดูคำตอบ</button></div>
+    <div id="ticketResult"></div>
   </div>
 </section>
 
@@ -213,9 +231,13 @@ async function loadAnnouncements() {
     $("announceBox").innerHTML = list.map(a => `
       <div class="card">
         <h3>${esc(a.title)}</h3>
-        <div class="body">${esc(a.body)}</div>
-        ${a.link_url ? `<a class="doclink" href="${esc(a.link_url)}" target="_blank" rel="noopener">
-          📄 ${esc(a.link_label || "เปิดเอกสาร")}</a>` : ""}
+        ${a.body ? `<div class="body">${esc(a.body)}</div>` : ""}
+        <div>
+          ${a.file_url ? `<a class="doclink" href="${esc(a.file_url)}" target="_blank" rel="noopener">
+            📕 ${esc(a.file_name || "เปิดไฟล์ประกาศ (PDF)")}</a>` : ""}
+          ${a.link_url ? `<a class="doclink" href="${esc(a.link_url)}" target="_blank" rel="noopener">
+            📄 ${esc(a.link_label || "เปิดเอกสาร")}</a>` : ""}
+        </div>
       </div>`).join("");
   } catch (e) {
     $("announceBox").innerHTML =
@@ -374,13 +396,77 @@ async function sendChat() {
       body: JSON.stringify({ q })
     });
     thinking.textContent = r.answer;
+    // ตอบไม่ได้ → ระบบบันทึกคำถามส่งให้เจ้าหน้าที่ และคืนรหัสคำถามมา
+    if (!r.matched && r.ticket) {
+      rememberTicket(r.ticket, q);
+      refreshMyQuestions();
+    }
   } catch (e) {
     thinking.textContent = "เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้งค่ะ";
   }
 }
 
+// ─── คำถามที่รอเจ้าหน้าที่ตอบ (จำรหัสไว้ใน localStorage ของเครื่องนี้) ─────────
+const TICKET_KEY = "pwsTickets";
+const myTickets = () => { try { return JSON.parse(localStorage.getItem(TICKET_KEY) || "[]"); } catch (e) { return []; } };
+
+function rememberTicket(ticket, question) {
+  const list = myTickets();
+  if (!list.some(t => t.ticket === ticket)) {
+    list.unshift({ ticket, question });
+    localStorage.setItem(TICKET_KEY, JSON.stringify(list.slice(0, 20)));
+  }
+}
+
+function ticketCard(d, fallbackQ) {
+  const answered = d.status === "answered" && d.answer;
+  return `<div class="stage"><div class="head">
+      <span class="t">${esc(d.ticket || "")}</span>
+      <span class="badge ${answered ? "pass" : "wait"}">${answered ? "เจ้าหน้าที่ตอบแล้ว" : "รอเจ้าหน้าที่ตอบ"}</span>
+    </div><div class="inner">
+      <p class="hint" style="margin-bottom:8px">คำถาม: ${esc(d.question || fallbackQ || "")}</p>
+      ${answered
+        ? `<div class="body">${esc(d.answer)}</div>
+           <p class="hint" style="margin-top:8px">ตอบเมื่อ ${esc(d.answered_at || "")}</p>`
+        : `<p class="hint">เจ้าหน้าที่จะตอบให้โดยเร็วที่สุด (ในวันและเวลาทำการ จันทร์ - ศุกร์ 08.30 - 16.30 น.)
+             กรุณากลับมาตรวจสอบอีกครั้ง หรือสอบถามด่วนที่ LINE : psuwitsurat</p>`}
+    </div></div>`;
+}
+
+async function refreshMyQuestions() {
+  const list = myTickets();
+  $("myQBox").classList.toggle("hidden", list.length === 0);
+  if (!list.length) return;
+  const out = [];
+  for (const t of list) {
+    try {
+      const d = await api("/api/ask/status?ticket=" + encodeURIComponent(t.ticket));
+      out.push(ticketCard(d, t.question));
+    } catch (e) {
+      out.push(ticketCard({ ticket: t.ticket, status: "pending" }, t.question));
+    }
+  }
+  $("myQList").innerHTML = out.join("");
+}
+
+async function checkTicket() {
+  const t = $("ticketInput").value.trim();
+  if (!t) return showMsg("ticketMsg", "กรุณากรอกรหัสคำถาม", false);
+  $("ticketMsg").className = "msg";
+  try {
+    const d = await api("/api/ask/status?ticket=" + encodeURIComponent(t));
+    $("ticketResult").innerHTML = ticketCard(d);
+    rememberTicket(d.ticket, d.question);
+  } catch (e) {
+    $("ticketResult").innerHTML = "";
+    showMsg("ticketMsg", e.message, false);
+  }
+}
+
 // ─── init ───────────────────────────────────────────────────────────────────
 $("cidInput").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, ""); });
+loadChips();            // หน้าแรกคือแชทบอท จึงโหลดปุ่มคำถามยอดฮิตทันที
+refreshMyQuestions();   // มีคำถามค้างรอเจ้าหน้าที่ตอบไหม
 loadAnnouncements();
 </script>
 </body>

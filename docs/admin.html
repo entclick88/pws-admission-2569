@@ -74,6 +74,14 @@
   .row-item .t{font-weight:600;color:var(--primary)}
   .row-item .b{font-size:.87rem;color:var(--muted);white-space:pre-wrap;max-height:70px;overflow:hidden;margin-top:4px}
 
+  .pill{display:inline-block;background:var(--bad);color:#fff;border-radius:99px;
+        padding:1px 8px;font-size:.75rem;font-weight:700;margin-left:4px}
+  .qa-item{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px;background:#fff}
+  .qa-item.pending{border-left:4px solid var(--accent)}
+  .qa-item.answered{border-left:4px solid var(--ok)}
+  .qa-q{font-weight:600;color:var(--text);font-size:.97rem}
+  .qa-meta{font-size:.8rem;color:var(--muted);margin:4px 0 8px}
+
   .switch{display:flex;align-items:center;gap:9px;font-size:.9rem;margin-top:10px}
   .switch input{width:auto}
   .hidden{display:none!important}
@@ -96,7 +104,8 @@
 
 <nav class="hidden" id="mainNav">
   <div class="wrap">
-    <button data-v="import"  class="active" onclick="go('import')">📥 นำเข้าข้อมูลประกาศ</button>
+    <button data-v="qa"      class="active" onclick="go('qa')">📮 คำถามรอตอบ <span id="qaBadge" class="pill hidden">0</span></button>
+    <button data-v="import"  onclick="go('import')">📥 นำเข้าข้อมูลประกาศ</button>
     <button data-v="stages"  onclick="go('stages')">🔓 เปิด/ปิดการประกาศ</button>
     <button data-v="ann"     onclick="go('ann')">📢 ประกาศ</button>
     <button data-v="faq"     onclick="go('faq')">💬 FAQ chatbot</button>
@@ -126,6 +135,24 @@
     <p class="hint" style="margin-top:18px">
       หากขึ้นว่าไม่มีสิทธิ์ กรุณาให้ผู้ดูแลเพิ่มอีเมลของท่านใน <code>ADMIN_EMAILS</code>
       หรือใช้บัญชีในโดเมนที่กำหนด</p>
+  </div>
+</section>
+
+<!-- ═══ คำถามรอเจ้าหน้าที่ตอบ ═══ -->
+<section id="view-qa" class="view">
+  <div class="card">
+    <h3>📮 คำถามที่บอทตอบไม่ได้ — รอเจ้าหน้าที่ตอบ</h3>
+    <div class="note">
+      คำถามที่ผู้สมัคร/ผู้ปกครองถามแล้วบอทตอบไม่ได้ จะเข้าคิวที่นี่ พิมพ์คำตอบแล้วกดบันทึก
+      ผู้ถามจะเห็นคำตอบเมื่อกลับมาเปิดหน้าเว็บ (ระบบจำรหัสคำถามไว้ให้ในเครื่องของเขา)
+      <br>ติ๊ก <b>"เพิ่มเป็น FAQ ด้วย"</b> เพื่อให้บอทตอบคำถามทำนองนี้ได้เองในครั้งถัดไป
+    </div>
+    <div class="msg" id="qaMsg"></div>
+    <div class="btn-row" style="margin-top:0">
+      <button class="btn secondary" onclick="loadQuestions()">🔄 โหลดใหม่</button>
+      <button class="btn secondary" onclick="loadQuestions('pending')">แสดงเฉพาะที่รอตอบ</button>
+    </div>
+    <div id="qaList" class="hint" style="margin-top:14px">กำลังโหลด…</div>
   </div>
 </section>
 
@@ -191,10 +218,17 @@
     <div class="msg" id="annMsg"></div>
     <input type="hidden" id="annId">
     <label>หัวข้อ</label><input id="annTitle">
-    <label>เนื้อหา</label><textarea id="annBody" rows="8"></textarea>
+    <label>เนื้อหา (ไม่บังคับ — ถ้าแนบไฟล์ PDF อย่างเดียวก็ได้)</label><textarea id="annBody" rows="6"></textarea>
+
+    <label>📕 ไฟล์ประกาศ (PDF) — อัปโหลดแล้วผู้อ่านคลิกเปิดในหน้าต่างใหม่</label>
+    <input type="file" id="annFile" accept="application/pdf" onchange="uploadAnnFile()">
+    <div id="annFileBox" class="hint" style="margin-top:6px">ยังไม่ได้แนบไฟล์</div>
+    <input type="hidden" id="annFileUrl">
+
     <div class="grid">
-      <div><label>ลิงก์เอกสาร (ถ้ามี)</label><input id="annUrl" placeholder="https://…"></div>
-      <div><label>ข้อความปุ่มลิงก์</label><input id="annLabel" placeholder="อ่านประกาศฉบับเต็ม (PDF)"></div>
+      <div><label>ข้อความบนปุ่มเปิดไฟล์</label><input id="annFileName" placeholder="ประกาศรับสมัคร ปีการศึกษา 2570 (PDF)"></div>
+      <div><label>ลิงก์ภายนอกเพิ่มเติม (ถ้ามี)</label><input id="annUrl" placeholder="https://…"></div>
+      <div><label>ข้อความปุ่มลิงก์ภายนอก</label><input id="annLabel" placeholder="เปิดเอกสาร"></div>
       <div><label>ลำดับการแสดง</label><input id="annOrder" type="number" value="0"></div>
     </div>
     <div class="switch"><input type="checkbox" id="annPublished" checked>
@@ -283,6 +317,7 @@ function go(v) {
   if (v === "ann") loadAnn();
   if (v === "faq") loadFaq();
   if (v === "stages") loadStages();
+  if (v === "qa") loadQuestions();
   window.scrollTo(0, 0);
 }
 
@@ -347,7 +382,7 @@ async function enterAdmin(userInfo) {
     $("btnLogout").textContent = "ออกจากระบบ (" + userInfo.name + ")";
   }
   await loadStageOptions();
-  go("import");
+  go("qa");
 }
 
 // ─── รอบการประกาศ ───────────────────────────────────────────────────────────
@@ -521,13 +556,110 @@ async function clearStage() {
   } catch (e) { showMsg("importMsg", e.message, false); }
 }
 
+// ─── คำถามรอเจ้าหน้าที่ตอบ ───────────────────────────────────────────────────
+async function loadQuestions(status) {
+  $("qaList").textContent = "กำลังโหลด…";
+  try {
+    const r = await api("/api/admin/questions" + (status ? "?status=" + status : ""));
+    // ตัวเลขแจ้งเตือนบนแท็บ
+    const badge = $("qaBadge");
+    badge.textContent = r.pending;
+    badge.classList.toggle("hidden", !r.pending);
+
+    if (!r.list.length) { $("qaList").textContent = "ยังไม่มีคำถามในคิว"; return; }
+
+    $("qaList").innerHTML = r.list.map(q => {
+      const answered = q.status === "answered";
+      return `<div class="qa-item ${answered ? "answered" : "pending"}">
+        <div class="qa-q">${esc(q.question)}</div>
+        <div class="qa-meta">${esc(q.ticket || "")} · ถามเมื่อ ${esc(q.created_at)}
+          ${answered ? " · ✅ ตอบแล้วเมื่อ " + esc(q.answered_at) : " · ⏳ รอตอบ"}</div>
+        <label>คำตอบ</label>
+        <textarea id="qaAns_${q.id}" rows="4">${esc(q.answer || "")}</textarea>
+        <div class="switch">
+          <input type="checkbox" id="qaFaq_${q.id}" ${answered ? "" : "checked"}>
+          <label for="qaFaq_${q.id}" style="margin:0;font-weight:400">เพิ่มเป็น FAQ ด้วย (ให้บอทตอบเองครั้งถัดไป)</label>
+        </div>
+        <label>คำสำคัญสำหรับ FAQ (คั่นด้วย , — เว้นว่างจะใช้ข้อความคำถาม)</label>
+        <input id="qaKw_${q.id}" placeholder="เช่น ชุดนักเรียน,เครื่องแบบ,ซื้อชุด">
+        <div class="btn-row">
+          <button class="btn green sm" onclick="answerQuestion(${q.id})">💾 บันทึกคำตอบ</button>
+          <button class="btn red sm" onclick="delQuestion(${q.id})">🗑️ ลบคำถาม</button>
+        </div>
+      </div>`;
+    }).join("");
+  } catch (e) { $("qaList").textContent = e.message; }
+}
+
+async function answerQuestion(id) {
+  const answer = $("qaAns_" + id).value.trim();
+  if (!answer) return showMsg("qaMsg", "กรุณาพิมพ์คำตอบก่อนบันทึก", false);
+  try {
+    await api("/api/admin/questions/" + id, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        answer,
+        add_faq: $("qaFaq_" + id).checked ? 1 : 0,
+        keywords: $("qaKw_" + id).value.trim()
+      })
+    });
+    showMsg("qaMsg", "บันทึกคำตอบเรียบร้อยแล้ว ผู้ถามจะเห็นคำตอบเมื่อเปิดหน้าเว็บ", true);
+    loadQuestions();
+  } catch (e) { showMsg("qaMsg", e.message, false); }
+}
+
+async function delQuestion(id) {
+  if (!confirm("ยืนยันลบคำถามนี้?")) return;
+  try {
+    await api("/api/admin/questions/" + id, { method: "DELETE" });
+    showMsg("qaMsg", "ลบคำถามแล้ว", true);
+    loadQuestions();
+  } catch (e) { showMsg("qaMsg", e.message, false); }
+}
+
 // ─── ประกาศ ─────────────────────────────────────────────────────────────────
+// อัปโหลดไฟล์ PDF ประกาศขึ้น Cloudinary แล้วเก็บ URL ไว้ในฟอร์ม
+async function uploadAnnFile() {
+  const f = $("annFile").files[0];
+  if (!f) return;
+  if (f.size > 15 * 1024 * 1024)
+    return showMsg("annMsg", "ไฟล์ใหญ่เกิน 15 MB กรุณาบีบอัดก่อน", false);
+  if (!CFG.CLOUDINARY_CLOUD || CFG.CLOUDINARY_CLOUD.indexOf("PUT_YOUR") === 0)
+    return showMsg("annMsg", "ยังไม่ได้ตั้งค่า Cloudinary ในไฟล์ config.js", false);
+
+  $("annFileBox").textContent = "⏳ กำลังอัปโหลด…";
+  try {
+    const fd = new FormData();
+    fd.append("file", f);
+    fd.append("upload_preset", CFG.CLOUDINARY_PRESET);
+    fd.append("folder", (CFG.CLOUDINARY_FOLDER || "pws-admission") + "/announcements");
+    const res = await fetch("https://api.cloudinary.com/v1_1/" + CFG.CLOUDINARY_CLOUD + "/auto/upload",
+      { method: "POST", body: fd });
+    const d = await res.json();
+    if (!res.ok || !d.secure_url) throw new Error((d.error && d.error.message) || "อัปโหลดไม่สำเร็จ");
+
+    $("annFileUrl").value = d.secure_url;
+    $("annFileBox").innerHTML = `✅ แนบไฟล์แล้ว —
+      <a href="${esc(d.secure_url)}" target="_blank" rel="noopener">เปิดดูไฟล์</a>
+      <button class="btn secondary sm" style="margin-left:8px" onclick="clearAnnFile()">ลบไฟล์แนบ</button>`;
+    if (!$("annFileName").value.trim()) $("annFileName").value = f.name.replace(/\.pdf$/i, "") + " (PDF)";
+  } catch (e) {
+    $("annFileBox").textContent = "❌ " + e.message;
+  }
+}
+
+function clearAnnFile() {
+  $("annFileUrl").value = ""; $("annFile").value = "";
+  $("annFileBox").textContent = "ยังไม่ได้แนบไฟล์";
+}
+
 async function loadAnn() {
   try {
     const list = await api("/api/admin/announcements");
     $("annList").innerHTML = list.length === 0 ? "ยังไม่มีประกาศ" : list.map(a => `
       <div class="row-item">
-        <div class="t">${esc(a.title)} ${a.published ? "" : '<span class="hint">(ซ่อนอยู่)</span>'}</div>
+        <div class="t">${esc(a.title)} ${a.published ? "" : '<span class="hint">(ซ่อนอยู่)</span>'}
+          ${a.file_url ? '<span class="hint">📕 มีไฟล์ PDF</span>' : ""}</div>
         <div class="b">${esc(a.body)}</div>
         <div class="btn-row">
           <button class="btn secondary sm" onclick='editAnn(${JSON.stringify(a).replace(/'/g, "&#39;")})'>✏️ แก้ไข</button>
@@ -541,13 +673,19 @@ function editAnn(a) {
   $("annId").value = a.id; $("annTitle").value = a.title; $("annBody").value = a.body;
   $("annUrl").value = a.link_url || ""; $("annLabel").value = a.link_label || "";
   $("annOrder").value = a.sort_order || 0; $("annPublished").checked = !!a.published;
+  $("annFileUrl").value = a.file_url || ""; $("annFileName").value = a.file_name || "";
+  $("annFileBox").innerHTML = a.file_url
+    ? `✅ แนบไฟล์แล้ว — <a href="${esc(a.file_url)}" target="_blank" rel="noopener">เปิดดูไฟล์</a>
+       <button class="btn secondary sm" style="margin-left:8px" onclick="clearAnnFile()">ลบไฟล์แนบ</button>`
+    : "ยังไม่ได้แนบไฟล์";
   $("annFormTitle").textContent = "✏️ แก้ไขประกาศ";
   window.scrollTo(0, 0);
 }
 
 function resetAnn() {
-  ["annId", "annTitle", "annBody", "annUrl", "annLabel"].forEach(i => $(i).value = "");
+  ["annId", "annTitle", "annBody", "annUrl", "annLabel", "annFileName"].forEach(i => $(i).value = "");
   $("annOrder").value = 0; $("annPublished").checked = true;
+  clearAnnFile();
   $("annFormTitle").textContent = "📢 เพิ่มประกาศใหม่";
 }
 
@@ -556,9 +694,12 @@ async function saveAnn() {
   const body = {
     title: $("annTitle").value.trim(), body: $("annBody").value,
     link_url: $("annUrl").value.trim() || null, link_label: $("annLabel").value.trim() || null,
+    file_url: $("annFileUrl").value.trim() || null, file_name: $("annFileName").value.trim() || null,
     published: $("annPublished").checked ? 1 : 0, sort_order: parseInt($("annOrder").value, 10) || 0
   };
-  if (!body.title || !body.body) return showMsg("annMsg", "กรุณากรอกหัวข้อและเนื้อหา", false);
+  if (!body.title) return showMsg("annMsg", "กรุณากรอกหัวข้อ", false);
+  if (!body.body && !body.file_url)
+    return showMsg("annMsg", "กรุณากรอกเนื้อหา หรือแนบไฟล์ PDF อย่างน้อยหนึ่งอย่าง", false);
   try {
     await api("/api/admin/announcements" + (id ? "/" + id : ""), {
       method: id ? "PUT" : "POST",

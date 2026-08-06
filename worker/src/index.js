@@ -159,22 +159,53 @@ function rowToApplication(row) {
   });
 }
 
-// ── chatbot: จับคู่คำสำคัญ คำที่ยาวและตรงกว่าได้คะแนนสูงกว่า ─────────────────
-function matchFaq(question, faqs) {
-  const q = String(question || '').toLowerCase().trim();
-  if (!q) return null;
+// ── chatbot: จับคู่คำถามแบบยืดหยุ่น ไม่ต้องพิมพ์ตรงเป๊ะ ─────────────────────
+// ภาษาไทยไม่เว้นวรรค จึงเทียบด้วย n-gram (Dice coefficient) แทนการตัดคำ
+const norm = s => String(s || '').toLowerCase().replace(/[\s​.,!?'"()\[\]{}\-–—:;/\\]+/g, '');
 
+function grams(s, n = 2) {
+  const out = new Set();
+  for (let i = 0; i + n <= s.length; i++) out.add(s.slice(i, i + n));
+  return out;
+}
+
+// ความคล้าย 0..1 — ลงโทษกรณีความยาวต่างกันมาก จึงไม่เข้าใกล้ 1 แบบมั่ว ๆ
+function dice(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const A = grams(a), B = grams(b);
+  if (!A.size || !B.size) return 0;
+  let inter = 0;
+  for (const g of A) if (B.has(g)) inter++;
+  return (2 * inter) / (A.size + B.size);
+}
+
+// คะแนนความเกี่ยวข้องของคำถามกับ FAQ หนึ่งข้อ
+function scoreFaq(qn, f) {
+  let best = 0;
+  for (const raw of String(f.keywords || '').split(',')) {
+    const kw = norm(raw);
+    if (!kw) continue;
+    // คำสำคัญยาวพอและอยู่ในคำถามตรง ๆ = ตรงเต็ม
+    if (kw.length >= 3 && qn.includes(kw)) return 1;
+    best = Math.max(best, dice(qn, kw));
+  }
+  // เทียบกับตัวคำถามใน FAQ ด้วย (ถ่วงน้ำหนักรองลงมาเล็กน้อย)
+  return Math.max(best, dice(qn, norm(f.question)) * 0.95);
+}
+
+// ต่ำกว่านี้ถือว่าตอบไม่ได้ → ส่งให้เจ้าหน้าที่
+const MATCH_MIN = 0.42;
+
+function matchFaq(question, faqs) {
+  const qn = norm(question);
+  if (!qn) return null;
   let best = null, bestScore = 0;
   for (const f of faqs) {
-    let score = 0;
-    for (const raw of String(f.keywords || '').split(',')) {
-      const kw = raw.trim().toLowerCase();
-      if (kw && q.includes(kw)) score += kw.length;
-    }
-    if (score > bestScore) { bestScore = score; best = f; }
+    const s = scoreFaq(qn, f);
+    if (s > bestScore) { bestScore = s; best = f; }
   }
-  // ต้องตรงอย่างน้อย 3 ตัวอักษร กันการจับคู่มั่ว
-  return bestScore >= 3 ? best : null;
+  return bestScore >= MATCH_MIN ? best : null;
 }
 
 export default {
@@ -199,7 +230,7 @@ export default {
       // ประกาศทั้งหมด
       if (path === '/api/announcements' && m === 'GET') {
         const { results } = await env.DB.prepare(
-          'SELECT id, title, body, link_url, link_label, updated_at FROM announcements WHERE published = 1 ORDER BY sort_order, id'
+          'SELECT id, title, body, link_url, link_label, file_url, file_name, updated_at FROM announcements WHERE published = 1 ORDER BY sort_order, id'
         ).all();
         return json(results);
       }
@@ -216,20 +247,48 @@ export default {
 
       // ถาม chatbot
       if (path === '/api/ask' && m === 'POST') {
-        const { q } = await req.json();
-        if (!String(q || '').trim()) return err('กรุณาพิมพ์คำถาม');
+        const body = await req.json();
+        const q = String(body.q || '').trim();
+        if (!q) return err('กรุณาพิมพ์คำถาม');
 
         const { results } = await env.DB.prepare('SELECT * FROM faqs ORDER BY sort_order, id').all();
         const hit = matchFaq(q, results);
         if (hit) return json({ matched: true, question: hit.question, answer: hit.answer });
 
+        // ตอบไม่ได้ → บันทึกเข้าคิวให้เจ้าหน้าที่ตอบ แล้วคืนรหัสคำถามให้ผู้ถาม
+        let row = await env.DB.prepare(
+          "SELECT ticket FROM questions WHERE question = ? AND status = 'pending' LIMIT 1"
+        ).bind(q).first();
+
+        let ticket = row && row.ticket;
+        if (!ticket) {
+          const ins = await env.DB.prepare(
+            'INSERT INTO questions (question) VALUES (?) RETURNING id'
+          ).bind(q).first();
+          ticket = 'Q-' + String(ins.id).padStart(4, '0');
+          await env.DB.prepare('UPDATE questions SET ticket = ? WHERE id = ?').bind(ticket, ins.id).run();
+        }
+
         return json({
           matched: false,
-          answer: 'ขออภัยค่ะ ยังไม่พบข้อมูลเรื่องนี้ในประกาศรับสมัคร 🙏\n\n' +
-                  'ลองถามใหม่ด้วยคำสั้น ๆ เช่น "ค่าสมัคร" "วันสอบ" "เอกสาร" "ค่าเทอม"\n' +
-                  'หรือสอบถามเจ้าหน้าที่โดยตรง : 08 4557 9229 กด 5 (จันทร์ - ศุกร์ 08.30 - 16.30 น.)\n' +
+          ticket,
+          answer: 'ขออภัยค่ะ น้องแอดมิทยังตอบคำถามนี้ไม่ได้ 🙏\n\n' +
+                  '📮 ส่งคำถามให้เจ้าหน้าที่แล้ว — รอเจ้าหน้าที่ตอบค่ะ\n' +
+                  'รหัสคำถามของคุณคือ ' + ticket + ' (กลับมาเปิดหน้านี้เพื่อดูคำตอบได้)\n\n' +
+                  'หากต้องการคำตอบด่วน ติดต่อ 08 4557 9229 กด 5 (จันทร์ - ศุกร์ 08.30 - 16.30 น.)\n' +
                   'LINE ID : psuwitsurat',
         });
+      }
+
+      // ตรวจสอบคำตอบจากเจ้าหน้าที่ด้วยรหัสคำถาม
+      if (path === '/api/ask/status' && m === 'GET') {
+        const t = String(url.searchParams.get('ticket') || '').trim().toUpperCase();
+        if (!t) return err('กรุณาระบุรหัสคำถาม');
+        const row = await env.DB.prepare(
+          'SELECT ticket, question, answer, status, created_at, answered_at FROM questions WHERE upper(ticket) = ?'
+        ).bind(t).first();
+        if (!row) return err('ไม่พบรหัสคำถามนี้ กรุณาตรวจสอบอีกครั้ง', 404);
+        return json(row);
       }
 
       // รอบการประกาศ + สถานะว่าเปิดให้สืบค้นหรือยัง
@@ -393,9 +452,10 @@ export default {
         if (m === 'POST') {
           const b = await req.json();
           const r = await env.DB.prepare(
-            `INSERT INTO announcements (title, body, link_url, link_label, published, sort_order)
-             VALUES (?,?,?,?,?,?)`
+            `INSERT INTO announcements (title, body, link_url, link_label, file_url, file_name, published, sort_order)
+             VALUES (?,?,?,?,?,?,?,?)`
           ).bind(b.title || '', b.body || '', b.link_url || null, b.link_label || null,
+                 cleanUrl(b.file_url) || null, b.file_name || null,
                  b.published === 0 ? 0 : 1, b.sort_order || 0).run();
           return json({ ok: true, id: r.meta.last_row_id });
         }
@@ -406,14 +466,55 @@ export default {
         if (m === 'PUT') {
           const b = await req.json();
           await env.DB.prepare(
-            `UPDATE announcements SET title=?, body=?, link_url=?, link_label=?, published=?,
-             sort_order=?, updated_at=datetime('now') WHERE id=?`
+            `UPDATE announcements SET title=?, body=?, link_url=?, link_label=?, file_url=?, file_name=?,
+             published=?, sort_order=?, updated_at=datetime('now') WHERE id=?`
           ).bind(b.title || '', b.body || '', b.link_url || null, b.link_label || null,
+                 cleanUrl(b.file_url) || null, b.file_name || null,
                  b.published === 0 ? 0 : 1, b.sort_order || 0, mt[1]).run();
           return json({ ok: true });
         }
         if (m === 'DELETE') {
           await env.DB.prepare('DELETE FROM announcements WHERE id=?').bind(mt[1]).run();
+          return json({ ok: true });
+        }
+      }
+
+      // ---- คำถามที่บอทตอบไม่ได้ (คิวรอเจ้าหน้าที่ตอบ) ----
+      if (path === '/api/admin/questions' && m === 'GET') {
+        needAdmin(user);
+        const st = url.searchParams.get('status');   // pending | answered | (ว่าง = ทั้งหมด)
+        const { results } = await env.DB.prepare(
+          'SELECT * FROM questions' + (st ? ' WHERE status = ?' : '') +
+          " ORDER BY CASE status WHEN 'pending' THEN 0 ELSE 1 END, id DESC"
+        ).bind(...(st ? [st] : [])).all();
+        const pending = await env.DB.prepare(
+          "SELECT COUNT(*) AS n FROM questions WHERE status = 'pending'"
+        ).first();
+        return json({ list: results || [], pending: pending.n });
+      }
+
+      mt = path.match(/^\/api\/admin\/questions\/(\d+)$/);
+      if (mt) {
+        needAdmin(user);
+        if (m === 'PUT') {
+          const b = await req.json();
+          const answer = String(b.answer || '').trim();
+          if (!answer) return err('กรุณาพิมพ์คำตอบ');
+          await env.DB.prepare(
+            "UPDATE questions SET answer = ?, status = 'answered', answered_at = datetime('now') WHERE id = ?"
+          ).bind(answer, mt[1]).run();
+
+          // เลือกบันทึกเป็น FAQ ด้วย เพื่อให้บอทตอบเองได้ในครั้งถัดไป
+          if (b.add_faq) {
+            const q = await env.DB.prepare('SELECT question FROM questions WHERE id = ?').bind(mt[1]).first();
+            await env.DB.prepare(
+              'INSERT INTO faqs (keywords, question, answer, suggested, sort_order) VALUES (?,?,?,0,99)'
+            ).bind(String(b.keywords || q.question || '').trim(), q.question, answer).run();
+          }
+          return json({ ok: true });
+        }
+        if (m === 'DELETE') {
+          await env.DB.prepare('DELETE FROM questions WHERE id = ?').bind(mt[1]).run();
           return json({ ok: true });
         }
       }

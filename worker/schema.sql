@@ -11,6 +11,20 @@ DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS applications;
 DROP TABLE IF EXISTS app_counters;
+DROP TABLE IF EXISTS questions;
+
+-- ── คำถามที่บอทตอบไม่ได้ → เข้าคิวให้เจ้าหน้าที่พิมพ์ตอบ ────────────────────
+-- ผู้ถามใช้ ticket (เช่น Q-0001) กลับมาดูคำตอบภายหลัง
+CREATE TABLE questions (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket      TEXT UNIQUE,
+  question    TEXT NOT NULL,
+  answer      TEXT,
+  status      TEXT NOT NULL DEFAULT 'pending',   -- pending | answered
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  answered_at TEXT
+);
+CREATE INDEX idx_questions_status ON questions (status);
 
 -- ── ใบสมัครสอบ ปีการศึกษา 2569 (เก็บใน D1 ทั้งหมด ไม่ใช้ Google Sheet) ────────
 -- ฟิลด์รายละเอียดทั้งหมดเก็บเป็น JSON ในคอลัมน์ data (คีย์ camelCase ตรงกับหน้าเว็บ)
@@ -53,13 +67,15 @@ CREATE TABLE sessions (
 );
 CREATE INDEX idx_sessions_user ON sessions (user_id);
 
--- ── ประกาศ / ข่าวสาร แสดงบนหน้าแรก ─────────────────────────────────────────
+-- ── ประกาศ / ข่าวสาร (แนบไฟล์ PDF ที่แอดมินอัปโหลดขึ้น Cloudinary ได้) ──────
 CREATE TABLE announcements (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   title      TEXT NOT NULL,
   body       TEXT NOT NULL,
   link_url   TEXT,
   link_label TEXT,
+  file_url   TEXT,          -- URL ไฟล์ PDF บน Cloudinary
+  file_name  TEXT,          -- ข้อความบนปุ่มเปิดไฟล์
   published  INTEGER NOT NULL DEFAULT 1,
   sort_order INTEGER NOT NULL DEFAULT 0,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
