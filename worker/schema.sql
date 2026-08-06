@@ -75,7 +75,11 @@ CREATE TABLE announcements (
   link_url   TEXT,
   link_label TEXT,
   file_url   TEXT,          -- URL ไฟล์ PDF บน Cloudinary
-  file_name  TEXT,          -- ข้อความบนปุ่มเปิดไฟล์
+  file_name  TEXT,          -- ชื่อไฟล์ที่แอดมินอัปโหลด
+  -- แสดงประกาศเป็น "ภาพหน้า PDF" บนหน้าเว็บโดยตรง โดยแปลงผ่าน Cloudinary
+  -- (https://res.cloudinary.com/<cloud>/image/upload/pg_N,w_1400/<public_id>.jpg)
+  file_public_id TEXT,      -- public_id ของไฟล์บน Cloudinary
+  file_pages     INTEGER,   -- จำนวนหน้าของ PDF
   published  INTEGER NOT NULL DEFAULT 1,
   sort_order INTEGER NOT NULL DEFAULT 0,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))

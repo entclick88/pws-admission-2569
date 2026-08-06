@@ -92,10 +92,11 @@
   .bubble.bot{background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
   .chat-row{display:flex;gap:8px}
   .chat-row input{flex:1}
-  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-  .chip{background:#eef4fb;color:var(--primary);border:1px solid #d3e2f2;border-radius:99px;
-        padding:6px 15px;font-size:.85rem;cursor:pointer;font-family:inherit}
-  .chip:hover{background:#dfeaf7}
+
+  /* ประกาศแบบไฟล์ PDF — แสดงเป็นภาพหน้ากระดาษเรียงลงมา */
+  .pdf-doc{display:flex;flex-direction:column;gap:14px;margin-top:4px}
+  .pdf-page{width:100%;height:auto;display:block;border:1px solid var(--line);
+            border-radius:8px;box-shadow:0 2px 8px rgba(20,40,70,.08);background:#fff}
 
   .hidden{display:none!important}
   .loading{text-align:center;color:var(--muted);padding:24px}
@@ -159,7 +160,6 @@
     <h3>💬 น้องแอดมิท — ผู้ช่วยตอบคำถามการรับสมัคร</h3>
     <p class="hint" style="margin-bottom:12px">ถามได้เลยค่ะ พิมพ์สั้น ๆ ก็เข้าใจ เช่น "ค่าสมัคร" "สอบวันไหน" "ใช้เอกสารอะไร"
       หากน้องแอดมิทตอบไม่ได้ ระบบจะส่งคำถามให้เจ้าหน้าที่ตอบให้ค่ะ</p>
-    <div class="chips" id="chipBox"></div>
     <div id="chatLog">
       <div class="bubble bot">สวัสดีค่ะ 🙋‍♀️ น้องแอดมิทยินดีตอบคำถามเกี่ยวกับการรับนักเรียนใหม่ ปีการศึกษา 2570 ค่ะ
 พิมพ์คำถามได้เลย เช่น "ค่าสมัครเท่าไร" "สอบวันไหน" "ใช้เอกสารอะไรบ้าง"</div>
@@ -210,7 +210,6 @@ function go(v) {
   document.querySelectorAll(".view").forEach(el => el.classList.remove("active"));
   $("view-" + v).classList.add("active");
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.v === v));
-  if (v === "chat" && !chipsLoaded) loadChips();
   window.scrollTo(0, 0);
 }
 
@@ -221,6 +220,22 @@ function showMsg(id, text, ok) {
 }
 
 // ─── ประกาศ ─────────────────────────────────────────────────────────────────
+// Cloudinary แปลงแต่ละหน้าของ PDF เป็นภาพให้ (pg_N) จึงแสดงบนหน้าเว็บได้เลย
+function pdfPageUrl(publicId, n) {
+  return "https://res.cloudinary.com/" + CFG.CLOUDINARY_CLOUD +
+         "/image/upload/pg_" + n + ",w_1400,q_auto,f_auto/" + publicId + ".jpg";
+}
+
+function pdfPagesHtml(publicId, pages) {
+  const n = Math.max(1, parseInt(pages, 10) || 1);
+  let out = '<div class="pdf-doc">';
+  for (let i = 1; i <= n; i++) {
+    out += `<img class="pdf-page" src="${esc(pdfPageUrl(publicId, i))}"
+              alt="ประกาศ หน้า ${i}" loading="lazy">`;
+  }
+  return out + "</div>";
+}
+
 async function loadAnnouncements() {
   try {
     const list = await api("/api/announcements");
@@ -231,13 +246,11 @@ async function loadAnnouncements() {
     $("announceBox").innerHTML = list.map(a => `
       <div class="card">
         <h3>${esc(a.title)}</h3>
-        ${a.body ? `<div class="body">${esc(a.body)}</div>` : ""}
-        <div>
-          ${a.file_url ? `<a class="doclink" href="${esc(a.file_url)}" target="_blank" rel="noopener">
-            📕 ${esc(a.file_name || "เปิดไฟล์ประกาศ (PDF)")}</a>` : ""}
-          ${a.link_url ? `<a class="doclink" href="${esc(a.link_url)}" target="_blank" rel="noopener">
-            📄 ${esc(a.link_label || "เปิดเอกสาร")}</a>` : ""}
-        </div>
+        ${a.file_public_id
+          ? pdfPagesHtml(a.file_public_id, a.file_pages)      // แสดงหน้า PDF เป็นภาพเลย
+          : (a.body ? `<div class="body">${esc(a.body)}</div>` : "")}
+        ${a.link_url ? `<a class="doclink" href="${esc(a.link_url)}" target="_blank" rel="noopener">
+          📄 ${esc(a.link_label || "เปิดเอกสาร")}</a>` : ""}
       </div>`).join("");
   } catch (e) {
     $("announceBox").innerHTML =
@@ -358,18 +371,6 @@ async function doSearch() {
 }
 
 // ─── Chatbot ────────────────────────────────────────────────────────────────
-let chipsLoaded = false;
-
-async function loadChips() {
-  chipsLoaded = true;
-  try {
-    const list = await api("/api/faqs?suggested=1");
-    $("chipBox").innerHTML = list.map(f =>
-      `<button class="chip" onclick="askText(this.dataset.q)" data-q="${esc(f.question)}">${esc(f.question)}</button>`
-    ).join("");
-  } catch (e) { /* ไม่มีปุ่มลัดก็ยังพิมพ์ถามได้ */ }
-}
-
 function addBubble(text, who) {
   const log = $("chatLog");
   const d = document.createElement("div");
@@ -379,8 +380,6 @@ function addBubble(text, who) {
   log.scrollTop = log.scrollHeight;
   return d;
 }
-
-function askText(q) { $("chatInput").value = q; sendChat(); }
 
 async function sendChat() {
   const inp = $("chatInput");
@@ -465,7 +464,6 @@ async function checkTicket() {
 
 // ─── init ───────────────────────────────────────────────────────────────────
 $("cidInput").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, ""); });
-loadChips();            // หน้าแรกคือแชทบอท จึงโหลดปุ่มคำถามยอดฮิตทันที
 refreshMyQuestions();   // มีคำถามค้างรอเจ้าหน้าที่ตอบไหม
 loadAnnouncements();
 </script>

@@ -220,13 +220,15 @@
     <label>หัวข้อ</label><input id="annTitle">
     <label>เนื้อหา (ไม่บังคับ — ถ้าแนบไฟล์ PDF อย่างเดียวก็ได้)</label><textarea id="annBody" rows="6"></textarea>
 
-    <label>📕 ไฟล์ประกาศ (PDF) — อัปโหลดแล้วผู้อ่านคลิกเปิดในหน้าต่างใหม่</label>
+    <label>📕 ไฟล์ประกาศ (PDF) — จะแสดงเป็นภาพหน้ากระดาษบนหน้าเว็บทันที ผู้อ่านไม่ต้องคลิกเปิด</label>
     <input type="file" id="annFile" accept="application/pdf" onchange="uploadAnnFile()">
     <div id="annFileBox" class="hint" style="margin-top:6px">ยังไม่ได้แนบไฟล์</div>
     <input type="hidden" id="annFileUrl">
+    <input type="hidden" id="annFilePublicId">
+    <input type="hidden" id="annFilePages">
 
     <div class="grid">
-      <div><label>ข้อความบนปุ่มเปิดไฟล์</label><input id="annFileName" placeholder="ประกาศรับสมัคร ปีการศึกษา 2570 (PDF)"></div>
+      <div><label>ชื่อไฟล์ (แสดงใต้ประกาศ)</label><input id="annFileName" placeholder="ประกาศรับสมัคร 2570.pdf"></div>
       <div><label>ลิงก์ภายนอกเพิ่มเติม (ถ้ามี)</label><input id="annUrl" placeholder="https://…"></div>
       <div><label>ข้อความปุ่มลิงก์ภายนอก</label><input id="annLabel" placeholder="เปิดเอกสาร"></div>
       <div><label>ลำดับการแสดง</label><input id="annOrder" type="number" value="0"></div>
@@ -639,17 +641,30 @@ async function uploadAnnFile() {
     if (!res.ok || !d.secure_url) throw new Error((d.error && d.error.message) || "อัปโหลดไม่สำเร็จ");
 
     $("annFileUrl").value = d.secure_url;
-    $("annFileBox").innerHTML = `✅ แนบไฟล์แล้ว —
-      <a href="${esc(d.secure_url)}" target="_blank" rel="noopener">เปิดดูไฟล์</a>
-      <button class="btn secondary sm" style="margin-left:8px" onclick="clearAnnFile()">ลบไฟล์แนบ</button>`;
-    if (!$("annFileName").value.trim()) $("annFileName").value = f.name.replace(/\.pdf$/i, "") + " (PDF)";
+    $("annFilePublicId").value = d.public_id || "";
+    $("annFilePages").value = d.pages || 1;
+    if (!$("annFileName").value.trim()) $("annFileName").value = f.name;
+
+    // แสดงตัวอย่างหน้าแรก (Cloudinary แปลงหน้า PDF เป็นภาพให้)
+    $("annFileBox").innerHTML =
+      `✅ แนบไฟล์แล้ว: ${esc(f.name)} — ${d.pages || 1} หน้า
+       <button class="btn secondary sm" style="margin-left:8px" onclick="clearAnnFile()">ลบไฟล์แนบ</button>
+       <div style="margin-top:8px"><img src="${esc(pdfPageUrl(d.public_id, 1, 500))}"
+            style="max-width:240px;border:1px solid var(--line);border-radius:6px"></div>`;
   } catch (e) {
     $("annFileBox").textContent = "❌ " + e.message;
   }
 }
 
+// URL ภาพของ PDF หน้าที่ n (แปลงโดย Cloudinary)
+function pdfPageUrl(publicId, n, width) {
+  return "https://res.cloudinary.com/" + CFG.CLOUDINARY_CLOUD +
+         "/image/upload/pg_" + n + ",w_" + (width || 1400) + ",q_auto,f_auto/" + publicId + ".jpg";
+}
+
 function clearAnnFile() {
-  $("annFileUrl").value = ""; $("annFile").value = "";
+  ["annFileUrl", "annFilePublicId", "annFilePages"].forEach(i => $(i).value = "");
+  $("annFile").value = "";
   $("annFileBox").textContent = "ยังไม่ได้แนบไฟล์";
 }
 
@@ -674,9 +689,12 @@ function editAnn(a) {
   $("annUrl").value = a.link_url || ""; $("annLabel").value = a.link_label || "";
   $("annOrder").value = a.sort_order || 0; $("annPublished").checked = !!a.published;
   $("annFileUrl").value = a.file_url || ""; $("annFileName").value = a.file_name || "";
-  $("annFileBox").innerHTML = a.file_url
-    ? `✅ แนบไฟล์แล้ว — <a href="${esc(a.file_url)}" target="_blank" rel="noopener">เปิดดูไฟล์</a>
-       <button class="btn secondary sm" style="margin-left:8px" onclick="clearAnnFile()">ลบไฟล์แนบ</button>`
+  $("annFilePublicId").value = a.file_public_id || ""; $("annFilePages").value = a.file_pages || "";
+  $("annFileBox").innerHTML = a.file_public_id
+    ? `✅ แนบไฟล์แล้ว: ${esc(a.file_name || "")} — ${a.file_pages || 1} หน้า
+       <button class="btn secondary sm" style="margin-left:8px" onclick="clearAnnFile()">ลบไฟล์แนบ</button>
+       <div style="margin-top:8px"><img src="${esc(pdfPageUrl(a.file_public_id, 1, 500))}"
+            style="max-width:240px;border:1px solid var(--line);border-radius:6px"></div>`
     : "ยังไม่ได้แนบไฟล์";
   $("annFormTitle").textContent = "✏️ แก้ไขประกาศ";
   window.scrollTo(0, 0);
@@ -695,6 +713,8 @@ async function saveAnn() {
     title: $("annTitle").value.trim(), body: $("annBody").value,
     link_url: $("annUrl").value.trim() || null, link_label: $("annLabel").value.trim() || null,
     file_url: $("annFileUrl").value.trim() || null, file_name: $("annFileName").value.trim() || null,
+    file_public_id: $("annFilePublicId").value.trim() || null,
+    file_pages: parseInt($("annFilePages").value, 10) || null,
     published: $("annPublished").checked ? 1 : 0, sort_order: parseInt($("annOrder").value, 10) || 0
   };
   if (!body.title) return showMsg("annMsg", "กรุณากรอกหัวข้อ", false);

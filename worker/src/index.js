@@ -230,7 +230,9 @@ export default {
       // ประกาศทั้งหมด
       if (path === '/api/announcements' && m === 'GET') {
         const { results } = await env.DB.prepare(
-          'SELECT id, title, body, link_url, link_label, file_url, file_name, updated_at FROM announcements WHERE published = 1 ORDER BY sort_order, id'
+          `SELECT id, title, body, link_url, link_label, file_url, file_name,
+                  file_public_id, file_pages, updated_at
+             FROM announcements WHERE published = 1 ORDER BY sort_order, id`
         ).all();
         return json(results);
       }
@@ -452,10 +454,12 @@ export default {
         if (m === 'POST') {
           const b = await req.json();
           const r = await env.DB.prepare(
-            `INSERT INTO announcements (title, body, link_url, link_label, file_url, file_name, published, sort_order)
-             VALUES (?,?,?,?,?,?,?,?)`
+            `INSERT INTO announcements (title, body, link_url, link_label, file_url, file_name,
+                                        file_public_id, file_pages, published, sort_order)
+             VALUES (?,?,?,?,?,?,?,?,?,?)`
           ).bind(b.title || '', b.body || '', b.link_url || null, b.link_label || null,
                  cleanUrl(b.file_url) || null, b.file_name || null,
+                 b.file_public_id || null, parseInt(b.file_pages, 10) || null,
                  b.published === 0 ? 0 : 1, b.sort_order || 0).run();
           return json({ ok: true, id: r.meta.last_row_id });
         }
@@ -467,9 +471,10 @@ export default {
           const b = await req.json();
           await env.DB.prepare(
             `UPDATE announcements SET title=?, body=?, link_url=?, link_label=?, file_url=?, file_name=?,
-             published=?, sort_order=?, updated_at=datetime('now') WHERE id=?`
+             file_public_id=?, file_pages=?, published=?, sort_order=?, updated_at=datetime('now') WHERE id=?`
           ).bind(b.title || '', b.body || '', b.link_url || null, b.link_label || null,
                  cleanUrl(b.file_url) || null, b.file_name || null,
+                 b.file_public_id || null, parseInt(b.file_pages, 10) || null,
                  b.published === 0 ? 0 : 1, b.sort_order || 0, mt[1]).run();
           return json({ ok: true });
         }
